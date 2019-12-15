@@ -1,6 +1,6 @@
-navigation/Point_xy start
-navigation/Point_xy goal
-navigation/PolyArray obstacle_list
+navigation/Point_xy start_pos
+navigation/Point_xy goal_pos
+navigation/sensor_msgs/LaserScan scan_list
 ---
 navigation/PointArray path
 bool ack
