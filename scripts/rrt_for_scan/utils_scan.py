@@ -12,12 +12,13 @@ THRESHOLD = 0.25
 ALPHA = 10
 
 def make_obstacles_scan(scan_list):
-	
-	pt_ang = np.arange(0,2*np.pi,np.pi/180)
+	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
 	pt_scan = np.array(scan_list)
 	pts = []
-	pt_x = np.multiply(pt_scan,np.cos(pt_ang))
-	pt_y = np.multiply(pt_scan,np.sin(pt_ang))
+	cos_of_pt_ang = np.cos(pt_ang)
+	sin_of_pt_ang = np.sin(pt_ang)
+	pt_x = np.multiply(pt_scan,cos_of_pt_ang)
+	pt_y = np.multiply(pt_scan,sin_of_pt_ang)
 
 	for a,b in zip(pt_x,pt_y):
 		pts.append((a,b))
@@ -28,7 +29,7 @@ def make_obstacles_scan(scan_list):
 	line_obst = abs(pt_scan_prev - pt_scan)>2*THRESHOLD
 	ind=np.argwhere(line_obst==True)
 	ind  = np.append(0 , ind)
-	ind  = np.append(ind, 359)
+	ind  = np.append(ind, len(scan_list))
 
 	line_obstacles = []
 	pt_scan_enum = list(enumerate(scan_list))
@@ -140,11 +141,17 @@ def check_intersection_scan(point_list , line_obstacles):
 		any of the obstacles. 
 	"""
 	#Direct path of pointlist
+	#print("I am in utils")
+	#print(line_obstacles)
 	direct_line = LineString(point_list)
+        line_obstacles = line_obstacles[:-1]
+        #print(len(line_obstacles))
+        
 	#Check if the direct_line is at least THRESHOLD distance away from every LineString Obstacles
 	for obstacle in line_obstacles:
-		if direct_line.distance(LineString(obstacle))<THRESHOLD:
-			return True
+		if(len(obstacle)>1):
+			if direct_line.distance(LineString(obstacle))<THRESHOLD:
+				return True
 	return False
 
 def visualize_scan(path, scan_list):
