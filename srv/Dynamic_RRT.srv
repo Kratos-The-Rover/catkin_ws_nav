@@ -1,4 +1,0 @@
-sensor_msgs/LaserScan input
-float64[] obstacle
----
-float64[] obstacle2

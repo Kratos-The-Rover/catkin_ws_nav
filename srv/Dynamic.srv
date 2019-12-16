@@ -2,5 +2,4 @@ navigation/Point_xy start_pos
 navigation/Point_xy goal_pos
 sensor_msgs/LaserScan scan_list
 ---
-navigation/PointArray path
 bool ack
