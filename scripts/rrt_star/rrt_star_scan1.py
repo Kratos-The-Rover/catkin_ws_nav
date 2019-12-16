@@ -34,8 +34,12 @@ except ImportError:
 show_animation = True
 
 start_time = 0
-list_of_obstacles=[]
-final_path = []
+#list_of_obstacles=[]
+#final_path = []
+
+
+
+
 
 def propagate_cost_to_leaves(node_list, parent_node):
 
@@ -47,7 +51,7 @@ def propagate_cost_to_leaves(node_list, parent_node):
 
 def calculate_cost(from_node, to_node):
     """ To calculate Cost from from_node --> to_node
-        Arguments: 	from_node --> Node from node_list
+        Arguments:  from_node --> Node from node_list
                     to_node --> tuple
         Return:
                     Value of Cost from start to to_node
@@ -63,7 +67,6 @@ def find_near_nodes(node_list, new_node, circle_dist):
                     (node.y - new_node[1]) ** 2 for node in node_list]
     near_inds = [dist_list.index(i) for i in dist_list if i <= r ** 2]
     return near_inds
-
 
 class Node(object):
     """
@@ -114,13 +117,11 @@ class RRTStar(object):
 
     def __call__(self, goal_point, scan, start_point=[0, 0], animation=False):
         """Plans path from start to goal avoiding obstacles.
-
         Args:
             start_point: tuple with start point coordinates.
             end_point: tuple with end point coordinates.
             scan: list of obstacles which themselves are list of points
             animation: flag for showing planning visualization (default False)
-
         Returns:
             A list of points representing the path determined from
             start to goal while avoiding obstacles.
@@ -129,7 +130,7 @@ class RRTStar(object):
         search_until_max_iter = True
 
         # Make line obstacles and scan in x,y from scan
-        #line_obstacles, pts = make_obstacles_scan(scan)
+        line_obstacles, pts = make_obstacles_scan(scan)
 
         # Setting Start and End
         self.start = Node(start_point[0], start_point[1])
@@ -215,8 +216,7 @@ class RRTStar(object):
             for index in nearest_indexes:
                 near_node = self.node_list[index]
                 point_list = [(near_node.x , near_node.y), (new_point[0],new_point[1])]
-		#print(point_list)
-                if not check_intersection_scan(point_list, list_of_obstacles):
+                if not check_intersection_scan(point_list, line_obstacles):
                     costs.append(near_node.cost + math.sqrt((near_node.x - new_point[0])**2 + (near_node.y - new_point[1])**2))
                 else:
                     costs.append(float("inf"))
@@ -246,9 +246,8 @@ class RRTStar(object):
                     node_check = self.node_list[ind]
                     point_list = [(new_node.x , new_node.y), (node_check.x , node_check.y)]
                     
-                    #no_coll = not check_intersection_scan(point_list, line_obstacles)
-                    no_coll = not check_intersection_scan(point_list, list_of_obstacles)
-		    cost_improv = new_node.cost + math.sqrt((new_node.x - node_check.x)**2 + (new_node.y - node_check.y)**2) < node_check.cost
+                    no_coll = not check_intersection_scan(point_list, line_obstacles)
+                    cost_improv = new_node.cost + math.sqrt((new_node.x - node_check.x)**2 + (new_node.y - node_check.y)**2) < node_check.cost
 
                     if no_coll and cost_improv:
                         node_check.parent = new_node
@@ -299,7 +298,7 @@ class RRTStar(object):
         pt_y = np.multiply(pt_scan,np.sin(pt_ang))
 
         for a,b in zip(pt_x,pt_y):
-		    pts.append((a,b))
+            pts.append((a,b))
 
         if rnd is not None:
             plt.plot(rnd.x, rnd.y, "^k")
@@ -342,29 +341,19 @@ class RRTStar(object):
 
         return None
 
-def dynamic_obstacle_addition(list_of_obstacles,scan_list):
-    #print "Returning [%s + %s = %s]"%(req.a, req.b, (req.a + req.b))
-    #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
-    print("Start " + __file__)
-    line_obstacles, pts = make_obstacles_scan(scan_list)
-    #check if the obstacle exists
-    list_of_obstacles+=line_obstacles
     
-    return list_of_obstacles
-
-
 def callback(data):
-    if(len(final_path)>=2):
-	curr_x = final_path[0][0]
-	curr_y = final_path[0][1]
-	next_x = final_path[1][0]
-	next_y = final_path[1][1]
-	point_list = [(curr_x,curr_y),(next_x,next_y)]
+    #if(len(final_path)>=2):
+	#curr_x = final_path[0][0]
+	#curr_y = final_path[0][1]
+	#next_x = final_path[1][0]
+	#next_y = final_path[1][1]
+	#point_list = [(curr_x,curr_y),(next_x,next_y)]
 	
-	if not check_intersection_scan(point_list,list_of_obstacles):
+	#if not check_intersection_scan(point_list,list_of_obstacles):
 	    #ask bot to move forward
 	    #remove first point from final_path
-	    return True
+	   # return True
 	
 	
     #rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
@@ -380,14 +369,16 @@ def callback(data):
     print("This is scan List ---------------------------------------------------->")
     print(len(scan_list))
     
-    if(rospy.get_time()-start_time<5):
-	list_of_obstacles=dynamic_obstacle_addition(list_of_obstacles,scan_list)
-        start_time = rospy.get_time()
+   # if(rospy.get_time()-start_time<5):
+	#list_of_obstacles=dynamic_obstacle_addition(list_of_obstacles,scan_list)
+    #    start_time = rospy.get_time()
 
     # Set Initial parameters
     rrt_star = RRTStar(sample_area=[-50, 50])
 
     print('\n ' + '-'*30 +  "\n> Starting operation ...\n " + '-'*30 + '\n')
+    start_time = time.time()
+
 
     path = rrt_star(goal_point = [4,0], scan = scan_list)
 
@@ -431,10 +422,9 @@ def main():
 
 
 if __name__ == '__main__':
-    start_time = rospy.get_time()
+    
     main()
             
-
 
 
 

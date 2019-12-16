@@ -1,19 +1,31 @@
 #!/usr/bin/env python
-
-from navigation.srv import Dynamic_RRT , Dynamic_RRTRequest , Dynamic_RRTResponse
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_for_scan')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_star')))
+from navigation.srv import Dynamic,DynamicResponse, DynamicRequest
 from shapely.geometry import Polygon, Point , LineString
 import rospy
+from utils_scan import make_obstacles_scan,check_intersection_scan
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
+                "/../rrt_for_scan/")
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
+                "/../rrt_star/")
+
 
 def chk_intersection(req):
-	line = LineString([req.start_pos,req.goal_pos])
-	for obstacle in req.scan_list:
-		if line.instersects(Polygon(obstacle)):
-			return Dynamic_RRTResponse(False)
-	return Dynamic_RRTResponse(True)
+	line_obstacles,pts = make_obstacles_scan(req.scan_list)
+	for obstacle in line_obstacles:
+		print(check_intersection_scan([req.start_pos.point,req.goal_pos.point],line_obstacles))
+		if check_intersection_scan([req.start_pos.point,req.goal_pos.point],line_obstacles):
+			return DynamicResponse(False)
+	return DynamicResponse(True)
 
 def obstacle_check():
-	rospy.init_node('obstacle_check')
-	s = rospy.Service('dynamic_planner_service', Dynamic_RRT, chk_intersection)
+	rospy.init_node('obstacle_check', anonymous=True)
+	s = rospy.Service('dynamic_planner_service', Dynamic, chk_intersection)
+	print "Ready."
 	rospy.spin()
 
 

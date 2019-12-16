@@ -8,7 +8,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
 from navigation.msg import *
 # from context import RRT, utils
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../rrt_for_scan')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_for_scan')))
 
 from utils_scan import scan_obstacle_checker, make_obstacles_scan, check_intersection_scan
 from utils_scan import adjustable_random_sampler as sampler
@@ -19,11 +19,11 @@ import math, time
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../rrt_for_scan/")
+                "/./rrt_for_scan/")
 
 
 try:
-    from rrt import RRT
+    from RRT import RRT
 except ImportError:
     raise
 

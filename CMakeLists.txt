@@ -63,6 +63,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    Planner.srv
+   Dynamic.srv
 #   Service2.srv
  )
 
