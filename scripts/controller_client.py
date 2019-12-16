@@ -8,6 +8,11 @@ from sensor_msgs.msg import LaserScan
 from shapely.geometry import Polygon, Point, LineString
 from utils_scan import check_intersection_scan,make_obstacles
 from nav_msgs.msg import Odometry
+import roslib
+roslib.load_manifest('navigation')
+import actionlib
+
+from navigation.msg import moveToGoalAction, moveToGoalGoal
 #import service module and message file
 
 
@@ -107,6 +112,14 @@ class RootClient(object):
                 response_1 = dynamic_manager(self.final_path[0],self.final_path[1],self.scan_list)
                 if response_1.ack:
                     #call commander to move the bot 
+                    goal1 = moveToGoalGoal()
+                    goal1.goal = Point_xy([final_path[1]])
+                    client.send_goal(goal1)
+                    print("Asking the bot to move.")
+                    client.wait_for_result(rospy.Duration.from_sec(100.0))
+                    print("Bot has moved")
+
+                    #remove first node when successful
                     final_path = final_path[1:]
                 else:
                     #exit the function and call RRT service again for a new path
@@ -123,6 +136,8 @@ if __name__ == "__main__":
     rospy.init_node("controller_client", anonymous=True)
 	rospy.wait_for_service('rrt_star_planner_service')
     rospy.wait_for_service('dynamic_planner_service')
+    client = actionlib.SimpleActionClient('do_dishes', DoDishesAction)
+    client.wait_for_server()
     # rospy.wait_for_service() # SET THIS FOR COMMANDER
     o = RootClient()
     o.main()
