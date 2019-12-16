@@ -28,7 +28,13 @@ class Root():
 		"""Call Path planner selected(RRT*, )
 			
 			Args:
-				request: Request by ros client. Contains scan_data
+			      request: Request by ros client. Contains 
+            start_pos: tuple with start point coordinates.
+            end_pos: tuple with end point coordinates.
+            scan_list: list of obstacles which themselves are list of points
+            animation: flag for showing planning visualization (default False)
+				
+
 			Returns:
 				RETURN_RESP: PlannerResponse()
 				
@@ -42,30 +48,28 @@ class Root():
 		
 		#Converting request from ros msg format -> basic python data type
 
-		ST_PT = tuple(request.start.point) 
-		END_PT = tuple(request.goal.point)
-		ROBST = request.obstacle_list.polygons
-		OBSTACLE = []
+		ST_PT = tuple(request.start_pos.point) 
+		END_PT = tuple(request.goal_pos.point)
+		SCAN = request.scan_list
+		#OBSTACLE = []
 		
 		#Extracting Obstacle information from ROBST
-		for pt_array in ROBST : 
-			tmp = []
-			tmp = [tuple(pt.point) for pt in pt_array.points]
-			OBSTACLE.append(tmp)
-		
+		#for pt_array in ROBST : 
+		#	tmp = []
+		#	OBSTACLE.append(tmp)
+        
 		RETURN_RESP = PlannerResponse()
 
 		print("-"*30)
-		rospy.loginfo(" Starting to plan from %r -> %r \n Obstacles-> %r"%(ST_PT,END_PT,OBSTACLE))
+		rospy.loginfo(" Starting to plan from %r -> %r \n Obstacles-> %r"%(ST_PT,END_PT,SCAN))
 		print("-"*30)
 		
-		#Make class instance and get path,optimized_path
-		tree = RRT(sample_area=(-5, 15), sampler=sampler, expand_dis=0.1)
-		PATH , node_list = tree(ST_PT , END_PT , OBSTACLE)
-		OPTIMIZED_PATH = path_optimizer(PATH, OBSTACLE)
+		#Make class instance and get path
+		tree = RRTStar(sample_area=(-5, 15), sampler=sampler, expand_dis=0.1)
+		PATH , node_list = tree(ST_PT , END_PT , SCAN)
 		
-		#Convert optimized path to Ros Format and Send
-		RETURN_RESP.path.points = [Point_xy( [ pts[0] , pts[1] ] ) for pts in OPTIMIZED_PATH]
+		
+		RETURN_RESP.path.points = [Point_xy( [ pts[0] , pts[1] ] ) for pts in PATH]
 		RETURN_RESP.ack = True
 		print("-"*30)
 		return RETURN_RESP
