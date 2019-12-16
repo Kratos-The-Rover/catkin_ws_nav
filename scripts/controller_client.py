@@ -36,11 +36,17 @@ class RootClient(object):
 
         self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb)
         self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
-        self.gps_Sub = rospy.Subscriber('/')
+        self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
         #class variables initialized:
 
         self.start = [0,0]
         self.goal = [0,0]
+        
+        self.flag = 0
+
+        self.current_pos = Pose()
+        self.currentgps = NavSatFix()
+
         self.scan_list = []
         self.currentOdom = Odometry()
 
@@ -60,48 +66,54 @@ class RootClient(object):
         """
         self.currentOdom = odom_data
 
-
+    def gps_cb(self , gps_data):
+        """
+        Args: gps_data --> sensor_msgs/NavSatFix
+        Attributes: sets self.currentOdom
+        Return: None 
+        """
+        self.currentgps = gps_data
+    
     def main():
         """
         Args:
         Attributes: sets self.currentOdom
         Return:
         """
-        scan_list = data.ranges
-        scan_list = list(scan_list)
-        for i in range(len(scan_list)):
-            if(math.isnan(scan_list[i])):
-            #converting nan values to some number
-                scan_list[i] = 1000            
-        scan_list = tuple(scan_list)
-        line_obstacles, pts = make_obstacles_scan(scan_list)
-        
-        if len(path)>=2:
-            curr_x = path[0][0]
-            curr_y = path[0][1]
-            next_x = path[1][0]
-            next_y = path[1][1]
-            
-        point_list = [(curr_x,curr_y),(next_x,next_y)]
-        if not check_intersection_scan(point_list , line_obstacles):
-            #move forward
-            
-            #rotate towards next point
+        # rospy.set_param('start_location',"["+str(self.currentgps.latitude)+","+str(self.currentgps.longitude)+"]")
 
-            #remove current point from path
-            path = path[1:]
-            return
-
-
-        rospy.wait_for_service('rrt_star_planner_service')
-        try:
-            final_path = rospy.ServiceProxy('rrt_star_planner_service', Planner)
-            #start position is current position
-            resp = final_path(scan_list,start_position,goal_position)
-        if resp.ack:
+        while not rospy.is_shutdown:
                 
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            self.scan_list = list(scan_list)
+            for i in range(len(self.scan_list)):
+                if(math.isnan(self.scan_list[i])):
+                #converting nan values to some number
+                    self.scan_list[i] = 1000            
+            self.scan_list = tuple(self.scan_list)
+
+            # self.goal = rospy.get_param('')
+            if(self.flag==0)
+                try:
+                    rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
+                    response = rrt_star_path(self.start,self.goal,self.scan_list)
+                    if response.ack:
+                        final_path = response.path
+                        self.flag = 1
+                except rospy.ServiceException, e:
+                    print "Service call failed: %s"%e
+
+            try:
+                dynamic_manager = rospy.ServiceProxy('dynamic_planner_service', Dynamic)
+                response_1 = dynamic_manager(self.final_path[0],self.final_path[1],self.scan_list)
+                if response_1.ack:
+                    #call commander to move the bot 
+                    final_path = final_path[1:]
+                else:
+                    #exit the function and call RRT service again for a new path
+                    self.flag = 0
+                    break
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
 
     
 
