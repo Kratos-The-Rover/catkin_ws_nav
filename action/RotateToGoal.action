@@ -6,4 +6,4 @@ Point_xy goal # Specify which dishwasher we want to use
 bool result
 ---
 # Define a feedback message
-float64 distance_left
+float64 angle_left
