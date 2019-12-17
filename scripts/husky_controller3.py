@@ -9,6 +9,7 @@ import tf
 import time
 
 MAX_ANGULAR_VEL = 2
+current_yaw = 0
 
 class husky_controller():
 	def __init__(self):
@@ -37,8 +38,9 @@ class husky_controller():
 		self.pose.angular.x = euler[0]
 		self.pose.angular.y = euler[1]
 		self.pose.angular.z = euler[2]
-		current_yaw=self.pose.angular.z
 		self.last_yaw=current_yaw
+		current_yaw=self.pose.angular.z
+		
 
 		
 		# print "current_yaw", current_yaw
