@@ -80,6 +80,14 @@ class RootClient(object):
         """
         self.currentgps = gps_data
     
+    def commander_fb(self, fb_data):
+        """
+        Args: feedback from commander
+        Attributes: prints feedback from commander
+        Return: None 
+        """
+        rospy.loginfo(fb_data.distance_left)
+    
     def main():
         """
         Args:
@@ -117,7 +125,7 @@ class RootClient(object):
                     goal1.goal = Point_xy([final_path[1]])
                     client.send_goal(goal1)
                     print("Asking the bot to move.")
-                    client.wait_for_result(rospy.Duration.from_sec(100.0))
+                    client.wait_for_result(rospy.Duration.from_sec(100.0), feedback_cb = self.commander_fb)
                     print("Bot has moved")
 
                     #remove first node when successful
@@ -134,11 +142,13 @@ class RootClient(object):
 
 
 if __name__ == "__main__":
-    rospy.init_node("controller_client", anonymous=True)
-	rospy.wait_for_service('rrt_star_planner_service')
-    rospy.wait_for_service('dynamic_planner_service')
-    rospy.wait_for_service('commander')
-    
+        rospy.init_node("controller_client", anonymous=True)
+    try:
+        rospy.wait_for_service('rrt_star_planner_service',5)
+        rospy.wait_for_service('dynamic_planner_service',5)
+        rospy.wait_for_service('commander',5)
+    except rospy.ServiceException, e:
+        rospy.logerr("Services Could not be initialized")    
     o = RootClient()
     o.main()
 	rospy.logwarn("Killing!")
