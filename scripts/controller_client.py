@@ -42,12 +42,15 @@ class RootClient(object):
         self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb)
         self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
         self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
+        self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
         self.client = actionlib.SimpleActionClient('commander', moveToGoalAction)
+        self.dynamic_manager = rospy.ServiceProxy('dynamic_planner_service', Dynamic)
+
         #class variables initialized:
 
         self.start = [0,0]
         self.goal = [0,0]
-        
+        self.final_dest = [0,0]
         self.flag = 0
 
         self.current_pos = Pose()
@@ -63,6 +66,15 @@ class RootClient(object):
         Return: None
         """
         self.scan_list = scan_data.ranges
+        scan_temp = np.array(scan_data.ranges)
+        self.scan_list = scan_temp[scan_temp == 'inf']=1000
+            
+        # self.scan_list = list(scan_list)
+        # for i in range(len(self.scan_list)):
+        #     if(math.isnan(self.scan_list[i])):
+        #     #converting nan values to some number
+        #         self.scan_list[i] = 1000            
+        # self.scan_list = tuple(self.scan_list)
 
     def odom_cb(self, odom_data):
         """
@@ -80,6 +92,14 @@ class RootClient(object):
         """
         self.currentgps = gps_data
     
+    def commander_fb(self, fb_data):
+        """
+        Args: feedback from commander
+        Attributes: prints feedback from commander
+        Return: None 
+        """
+        rospy.loginfo(fb_data.distance_left)
+    
     def main():
         """
         Args:
@@ -89,56 +109,47 @@ class RootClient(object):
         # rospy.set_param('start_location',"["+str(self.currentgps.latitude)+","+str(self.currentgps.longitude)+"]")
 
         while not rospy.is_shutdown:
-                
-            self.scan_list = list(scan_list)
-            for i in range(len(self.scan_list)):
-                if(math.isnan(self.scan_list[i])):
-                #converting nan values to some number
-                    self.scan_list[i] = 1000            
-            self.scan_list = tuple(self.scan_list)
-
+            
             # self.goal = rospy.get_param('')
-            if(self.flag==0)
-                try:
-                    rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
-                    response = rrt_star_path(self.start,self.goal,self.scan_list)
-                    if response.ack:
-                        final_path = response.path
-                        self.flag = 1
-                except rospy.ServiceException, e:
-                    print "Service call failed: %s"%e
-
             try:
-                dynamic_manager = rospy.ServiceProxy('dynamic_planner_service', Dynamic)
-                response_1 = dynamic_manager(self.final_path[0],self.final_path[1],self.scan_list)
+                response = self.rrt_star_path(self.start,self.goal,self.scan_list)
+                if response.ack:
+                    final_path = response.path
+                    self.flag = 1
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+
+            while len(final_path)!=1:
+                response_1 = self.dynamic_manager(self.final_path[0],self.final_path[1],self.scan_list)
                 if response_1.ack:
                     #call commander to move the bot 
                     goal1 = moveToGoalGoal()
                     goal1.goal = Point_xy([final_path[1]])
-                    client.send_goal(goal1)
-                    print("Asking the bot to move.")
-                    client.wait_for_result(rospy.Duration.from_sec(100.0))
-                    print("Bot has moved")
+                    self.client.send_goal(goal1)
+                    # rospy.loginfo("Asking the bot to move.")
+                    self.client.wait_for_result(rospy.Duration.from_sec(100.0), feedback_cb = self.commander_fb)
+                    # print("Bot has moved")
 
                     #remove first node when successful
                     final_path = final_path[1:]
                 else:
-                    #exit the function and call RRT service again for a new path
-                    self.flag = 0
-                    break
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-
-    
-
+                    try:
+                        response = self.rrt_star_path(final_path[0],self.goal,self.scan_list)
+                        if response.ack:
+                            final_path = response.path
+                    except rospy.ServiceException, e:
+                        print "Service call failed: %s"%e
 
 
 if __name__ == "__main__":
     rospy.init_node("controller_client", anonymous=True)
-	rospy.wait_for_service('rrt_star_planner_service')
-    rospy.wait_for_service('dynamic_planner_service')
-    rospy.wait_for_service('commander')
-    
+    try:
+        rospy.wait_for_service('rrt_star_planner_service',5)
+        rospy.wait_for_service('dynamic_planner_service',5)
+        rospy.wait_for_service('commander',5)
+    except rospy.ServiceException, e:
+        rospy.logerr("Services Could not be initialized")    
     o = RootClient()
     o.main()
+    rospy.spin()
 	rospy.logwarn("Killing!")
