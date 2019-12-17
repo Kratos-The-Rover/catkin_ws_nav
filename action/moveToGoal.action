@@ -1,5 +1,6 @@
 # Define the goal
-Point_xy goal # Specify which dishwasher we want to use
+geometry_msgs/Pose goal # Specify which dishwasher we want to use
+
 ---
 # Define the result
 bool result
