@@ -8,27 +8,27 @@ import tf
 import roslib
 roslib.load_manifest('navigation')
 import actionlib
-from navigation.msg import moveToGoalAction
+from navigation.msg import moveToGoalAction, moveToGoalGoal, moveToGoalResult, moveToGoalFeedback
 
 dirs[4]={}
 pwm[4]={}
 
-GPIO.setmode(GPIO.BOARD)
+# GPIO.setmode(GPIO.BOARD)
 
-GPIO.setup(dirs[0], GPIO.OUT)
-GPIO.setup(dirs[1], GPIO.OUT)
-GPIO.setup(dirs[2], GPIO.OUT)
-GPIO.setup(dirs[3], GPIO.OUT)
+# GPIO.setup(dirs[0], GPIO.OUT)
+# GPIO.setup(dirs[1], GPIO.OUT)
+# GPIO.setup(dirs[2], GPIO.OUT)
+# GPIO.setup(dirs[3], GPIO.OUT)
 
-GPIO.setup(pwm[0], GPIO.OUT)
-GPIO.setup(pwm[1], GPIO.OUT)
-GPIO.setup(pwm[2], GPIO.OUT)
-GPIO.setup(pwm[3], GPIO.OUT)
+# GPIO.setup(pwm[0], GPIO.OUT)
+# GPIO.setup(pwm[1], GPIO.OUT)
+# GPIO.setup(pwm[2], GPIO.OUT)
+# GPIO.setup(pwm[3], GPIO.OUT)
 
-pwm0 = GPIO.PWM(pwm[0], 2000)
-pwm1 = GPIO.PWM(pwm[1], 2000)
-pwm2 = GPIO.PWM(pwm[2], 2000)
-pwm3 = GPIO.PWM(pwm[3], 2000)
+# pwm0 = GPIO.PWM(pwm[0], 2000)
+# pwm1 = GPIO.PWM(pwm[1], 2000)
+# pwm2 = GPIO.PWM(pwm[2], 2000)
+# pwm3 = GPIO.PWM(pwm[3], 2000)
 
 
 fwd_vel=0.1
@@ -47,20 +47,26 @@ class moveToGoalServer():
 		dest_x = p[0]
 		dest_y = p[1]
 		dest_yaw = dest_y/(math.sqrt(math.pow(dest_x,2)+math.pow(dest_y,2)))
-		my_controller = husky_controller()
-		# self.server.set_succeeded()
+		my_controller = husky_controller(self.server)
+
 
 class husky_controller():
-	def __init__(self):
+	def __init__(self,server):
 		self.pose = Twist()
 		self.odom = Odometry()
+		self.server = server
 
 		self.init_twist()
 
 		#to be changed
-		self.vel_pub = rospy.Publisher('/husky_velocity_controller/cmd_vel', Twist,queue_size=10)
-		self.odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, self.odom_cb)
+		# self.vel_pub = rospy.Publisher('/husky_velocity_controller/cmd_vel', Twist,queue_size=10)
+		# self.odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, self.odom_cb)
+		# rate=rospy.Rate(100)
+
+		self.vel_pub = rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,queue_size=10)
+		self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_cb)
 		rate=rospy.Rate(100)
+
 
 
 	def odom_cb(self,data):
@@ -79,31 +85,34 @@ class husky_controller():
 		self.pose.angular.z = euler[2]
 
 		current_yaw=self.pose.angular.z
+		x_dist = (abs(self.pose.linear.x-dest_x)
+		y_dist = (abs(self.pose.linear.y-dest_y)
 
-		if((abs(self.pose.linear.x-dest_x)<0.5) and (abs(self.pose.linear.y-dest_y)<0.5)):
-			print "condition satisfied"
-			pwm0.start(0)
-			pwm1.start(0)
-			pwm2.start(0)
-			pwm3.start(0)
-		else:
-			v=100
-			def mymap(a,b,c.d,e):
-				return d+((a-b)*(e-d)/(c-b))
+
+		# if(x_dist<0.5) and y_dist<0.5)):
+		# 	print "condition satisfied"
+		# 	pwm0.start(0)
+		# 	pwm1.start(0)
+		# 	pwm2.start(0)
+		# 	pwm3.start(0)
+		# else:
+		# 	v=100
+		# 	def mymap(a,b,c.d,e):
+		# 		return d+((a-b)*(e-d)/(c-b))
 			
-			vel_wheels[0] = v + (k1*(dest_yaw-current_yaw))
-    		vel_wheels[1] = v + (k1*(dest_yaw-current_yaw))
-    		vel_wheels[2] = v - (k1*(dest_yaw-current_yaw))
-    		vel_wheels[3] = v - (k1*(dest_yaw-current_yaw))
+		# 	vel_wheels[0] = v + (k1*(dest_yaw-current_yaw))
+  #   		vel_wheels[1] = v + (k1*(dest_yaw-current_yaw))
+  #   		vel_wheels[2] = v - (k1*(dest_yaw-current_yaw))
+  #   		vel_wheels[3] = v - (k1*(dest_yaw-current_yaw))
 
-    		pwmvel[0]=mymap(vel_wheels[0],v-k1,v+k1,0,100)
-    		pwmvel[1]=mymap(vel_wheels[1],v-k1,v+k1,0,100)
-    		pwmvel[2]=mymap(vel_wheels[2],v-k1,v+k1,0,100)
-    		pwmvel[3]=mymap(vel_wheels[3],v-k1,v+k1,0,100)
-    		pwm0.start(pwmvel[0])
-			pwm1.start(pwmvel[1])
-			pwm2.start(pwmvel[2])
-			pwm3.start(pwmvel[3])
+  #   		pwmvel[0]=mymap(vel_wheels[0],v-k1,v+k1,0,100)
+  #   		pwmvel[1]=mymap(vel_wheels[1],v-k1,v+k1,0,100)
+  #   		pwmvel[2]=mymap(vel_wheels[2],v-k1,v+k1,0,100)
+  #   		pwmvel[3]=mymap(vel_wheels[3],v-k1,v+k1,0,100)
+  #   		pwm0.start(pwmvel[0])
+		# 	pwm1.start(pwmvel[1])
+		# 	pwm2.start(pwmvel[2])
+		# 	pwm3.start(pwmvel[3])
 
 
 		if((abs(self.pose.linear.x-dest_x)<0.5) and (abs(self.pose.linear.y-dest_y)<0.5)):
@@ -116,6 +125,9 @@ class husky_controller():
 			twist_obj.angular.y=0
 			twist_obj.angular.z=0
 			self.vel_pub.publish(twist_obj)
+			result = moveToGoalResult()
+			result.result = True
+			self.server.set_succeeded(result, "Goal reached successfully")
 
 
 		else:
@@ -127,6 +139,11 @@ class husky_controller():
 			twist_obj.angular.y=0
 			twist_obj.angular.z=k1*(dest_yaw-current_yaw)
 			self.vel_pub.publish(twist_obj)
+
+			#feedback
+			feedback = moveToGoalFeedback()
+			feedback.distance_left = math.sqrt((x_dist)**2 + (y_dist)**2)
+			self.server.publish_feedback(feedback)
 
 		#return from here so that server.set_succeeded executes
 

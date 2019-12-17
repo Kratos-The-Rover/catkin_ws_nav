@@ -42,6 +42,7 @@ class RootClient(object):
         self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb)
         self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
         self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
+        self.client = actionlib.SimpleActionClient('commander', moveToGoalAction)
         #class variables initialized:
 
         self.start = [0,0]
@@ -136,9 +137,8 @@ if __name__ == "__main__":
     rospy.init_node("controller_client", anonymous=True)
 	rospy.wait_for_service('rrt_star_planner_service')
     rospy.wait_for_service('dynamic_planner_service')
-    client = actionlib.SimpleActionClient('do_dishes', DoDishesAction)
-    client.wait_for_server()
-    # rospy.wait_for_service() # SET THIS FOR COMMANDER
+    rospy.wait_for_service('commander')
+    
     o = RootClient()
     o.main()
 	rospy.logwarn("Killing!")
