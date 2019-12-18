@@ -7,29 +7,28 @@ import math
 import actionlib
 import roslib
 roslib.load_manifest('navigation')
-from navigation.msg import moveToGoalAction, moveToGoalGoal, moveToGoalResult, moveToGoalFeedback, Point_xy
+from navigation.msg import RotateToGoalAction, RotateToGoalGoal, RotateToGoalResult, RotateToGoalFeedback, Point_xy
  
 roll = pitch = yaw = 0.0
 x = y = z = 0
 #target = 90
-fwd_vel= 0.3
+kp=0.5
 flag=1
  
-def get_position (msg):
+def get_rotation (msg):
     global roll, pitch, yaw, x, y, z
-    #orientation_q = msg.pose.pose.orientation
+    orientation_q = msg.pose.pose.orientation
     position_q= msg.pose.pose.position
     x=position_q.x
     y=position_q.y
     z=position_q.z
-    #orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-    #(roll, pitch, yaw) = euler_from_quaternion (orientation_list)
+    orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+    (roll, pitch, yaw) = euler_from_quaternion (orientation_list)
     # print yaw
 
 def execute(goal):
     print("in execute")
-    global x,y,command,fwd_vel,server,r,flag,pub
-    flag=1
+    global x,y,yaw,command,kp,server,r,flag,pub
     while flag:
         #quat = quaternion_from_euler (roll, pitch,yaw)
         #print quat
@@ -40,29 +39,30 @@ def execute(goal):
         x_diff=dest_x-x
         dest_y = p[1]
         y_diff=dest_y-y
-        if ((x_diff>0.5) or (y_diff>0.5)):
-            command.linear.x = fwd_vel
-            feedback = moveToGoalFeedback()
-            feedback.distance_left = math.sqrt(x_diff**2+y_diff**2)
+        target_rad = dest_yaw=math.atan2(y_diff,x_diff)
+        if ((target_rad-yaw)>0.1):
+            command.angular.z = kp * (target_rad-yaw)
+            feedback = RotateToGoalFeedback()
+            feedback.angle_left = abs(target_rad-yaw)
             server.publish_feedback(feedback)
             pub.publish(command)
         else:
             command.angular.z=0
             pub.publish(command)
-            result = moveToGoalResult()
+            result = RotateToGoalResult()
             result.result = True
             server.set_succeeded(result, "Goal reached successfully")
             flag=0
         print("publishing")
-        print("target pos={} current pos:{}", (dest_x,dest_y),(x,y))
+        print("target={} current:{}", target_rad,yaw)
         
 if __name__=="__main__":
-    rospy.init_node('move_robot')
+    rospy.init_node('rotate_robot')
     command =Twist()
-    sub = rospy.Subscriber ('/odom', Odometry, get_position)
-    print("after subscriber")
+    sub = rospy.Subscriber('/odom', Odometry, get_rotation)
+    # print("after subscriber")
     pub =  rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,queue_size=10)
-    server = actionlib.SimpleActionServer('commander', moveToGoalAction, execute, False)
+    server = actionlib.SimpleActionServer('rotator', RotateToGoalAction, execute, False)
     server.start()
     r = rospy.Rate(1)
     

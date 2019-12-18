@@ -5,20 +5,20 @@ roslib.load_manifest('navigation')
 import rospy
 import actionlib
 
-from navigation.msg import RotateToGoalAction, RotateToGoalGoal, Point_xy
+from navigation.msg import moveToGoalAction, moveToGoalGoal, Point_xy
 
 
 def feedback_cb(feedback):
-    print('[Feedback] Time elapsed: %f'%(feedback.distance_left))
+    print('[Feedback] Distance left: %f'%(feedback.distance_left))
 
 
 if __name__ == '__main__':
-    rospy.init_node('rotator_client')
-    client = actionlib.SimpleActionClient('rotator', RotateToGoalAction)
+    rospy.init_node('commander_client')
+    client = actionlib.SimpleActionClient('commander', moveToGoalAction)
     client.wait_for_server()
     print("Done waiting for server")
-    goal1 = RotateToGoalGoal()
-    goal1.goal = Point_xy([2,2])
+    goal1 = moveToGoalGoal()
+    goal1.goal = Point_xy([1.2,0])
     # Fill in the goal here
     client.send_goal(goal1,feedback_cb=feedback_cb)
     # print("Goal sent"+goal1)
