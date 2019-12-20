@@ -41,7 +41,12 @@ def execute(goal):
         dest_y = p[1]
         y_diff=dest_y-y
         dist=math.sqrt(x_diff**2+y_diff**2)
-        if ((x_diff>0.7) or (y_diff>0.7)):
+        # thres=0.5
+        # if(dist>5)
+        #     thres=0.7
+        # if(dist>10)
+        #     thres=1
+        if ((abs(x_diff)>0.5) or (abs(y_diff)>0.5)):
             command.linear.x = min(0.5,fwd_vel*dist)
             feedback = moveToGoalFeedback()
             feedback.distance_left = dist

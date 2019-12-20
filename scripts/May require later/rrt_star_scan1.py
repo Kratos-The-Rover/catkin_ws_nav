@@ -95,7 +95,7 @@ class RRTStar(object):
     """
 
     def __init__(self, sample_area,
-                    expand_dis=1.0,
+                    expand_dis=1,
                     path_resolution=1.0,
                     goal_sample_rate=0.1,
                     max_iter=250,
@@ -380,7 +380,7 @@ def callback(data):
     start_time = time.time()
 
 
-    path = rrt_star(goal_point = [6.403,0], scan = scan_list)
+    path = rrt_star(goal_point = [4.3793895500565405, 0.25943014554867627], scan = scan_list)
 
     print('\n ' + '-'*30 + "\n> Time taken: {:.4} seconds.\n ".format(time.time() - start_time) + '-'*30 + '\n')
 
@@ -390,6 +390,7 @@ def callback(data):
         print("found path!!")
 	
         final_path = path
+        print(final_path)
 
         # Draw final path
         if show_animation:

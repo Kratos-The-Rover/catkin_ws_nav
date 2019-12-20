@@ -61,7 +61,7 @@ class RRTStar(object):
     """
 
     def __init__(self, sample_area,
-                    expand_dis=1.0,
+                    expand_dis=1,
                     path_resolution=1.0,
                     goal_sample_rate=0.1,
                     max_iter=250,
@@ -328,7 +328,7 @@ def handle_add_two_ints(req):
     #    start_time = rospy.get_time()
 
     # Set Initial parameters
-    rrt_star = RRTStar(sample_area=[-50, 50])
+    rrt_star = RRTStar(sample_area=[-10, 10])
 
     print('\n ' + '-'*30 +  "\n> Starting operation ...\n " + '-'*30 + '\n')
     start_time = time.time()
@@ -341,10 +341,25 @@ def handle_add_two_ints(req):
     
     if path is not None:
         l=[]
+        prev=path[0]
         for p in path:
+            #check if distance > 4
+            x_diff=p[0]-prev[0]
+            y_diff=p[1]-prev[1]
+            dist=math.sqrt(x_diff**2+y_diff**2)
+            #print(p,dist)
+            no_of_div=int(dist/4)
+            for i in range(1,no_of_div+1):
+                x1=prev[0]+x_diff*i/(no_of_div+1)
+                y1=prev[1]+y_diff*i/(no_of_div+1)
+                c=Point_xy([x1,y1])
+                l.append(c)
+                #print("b/w:", p, "and", prev, "dist=", dist)
+                #print(" inserting ", c)
             a=Point_xy()
             a.point=p
             l.append(a)
+            prev=p
         b=PointArray()
         b.points=l
     	return PlannerResponse(b,True)

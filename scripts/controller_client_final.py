@@ -47,9 +47,9 @@ class RootClient(object):
 		#rrt_star Planner Service 
 
 		#class variables initialized:
-
+		self.flag=0
 		self.start = Point_xy([0,0])
-		self.goal = Point_xy([5,4])
+		self.goal = Point_xy([0,0])
 		self.final_dest = [0,0]
 		self.scan_list = []
 
@@ -65,6 +65,7 @@ class RootClient(object):
 
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb,queue_size=10)
 		self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
+		self.goal_sub = rospy.Subscriber('/goal', Point_xy, self.goal_cb)
 		#self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
 		self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
 		self.move_client = actionlib.SimpleActionClient('commander', moveToGoalAction)
@@ -107,6 +108,17 @@ class RootClient(object):
 		"""
 		self.currentOdom = odom_data
 		#print("Odom_CB DONE")
+	def goal_cb(self , goal_data):
+		"""
+		Args: goal_data --> navigation/NavSatFix
+		Attributes: sets self.goal and self.flag
+		Return: None 
+		"""
+		self.flag=1
+		self.goal = goal_data
+		#self.start = Point_xy([self.currentOdom.pose.pose.position.x],[currentOdom.pose.pose.position.y])
+		print("received goal",self.goal)
+		self.main()
 
 	def gps_cb(self , gps_data):
 		"""
@@ -187,8 +199,8 @@ class RootClient(object):
 		# rospy.set_param('start_location',"["+str(self.currentgps.latitude)+","+str(self.currentgps.longitude)+"]")
 
 		# while not rospy.is_shutdown:
-		flag=1
-		while(flag):
+		
+		while(self.flag):
 			final_path = []
 			# self.goal = rospy.get_param('')
 			try:
@@ -213,7 +225,7 @@ class RootClient(object):
 				goal2 = RotateToGoalGoal()
 				goal2.goal = final_path.points[-2]
 				self.rotate_client.send_goal(goal2, feedback_cb = self.rotator_fb)
-				self.rotate_client.wait_for_result(rospy.Duration.from_sec(100.0))
+				self.rotate_client.wait_for_result()
 				print("Done rotating the bot")
 				
 				# rospy.loginfo("Asking the bot to move.")
@@ -253,9 +265,9 @@ class RootClient(object):
 					break
 				print("updated final_path",final_path.points)
 			if(len(final_path.points)==1):
-				flag=0
+				self.flag=0
 
-		rospy.signal_shutdown("************************GOAL REACHED************************")
+		print("************************GOAL REACHED************************")
 	
 
 if __name__ == "__main__":
@@ -273,7 +285,7 @@ if __name__ == "__main__":
 	print("Calling RootClient")    
 	o = RootClient()
 	print("Calling Main")
-	o.main()
+	# o.main()
 	print("RosSpin")
 	rospy.spin()
 	rospy.logwarn("Killing!")

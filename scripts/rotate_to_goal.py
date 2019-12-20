@@ -45,7 +45,7 @@ def execute(goal):
         dest_y = p[1]
         y_diff=dest_y-y
         target_rad = math.atan2(y_diff,x_diff)
-        if (abs(target_rad-yaw)>0.01):
+        if (abs(target_rad-yaw)>0.005):
             print("did not reach target")
             command.angular.z = kp * (target_rad-yaw)
             feedback = RotateToGoalFeedback()
