@@ -16,10 +16,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
 
 def chk_intersection(req):
 	line_obstacles,pts = make_obstacles_scan(req.scan_list)
+	#print(line_obstacles)
 	for obstacle in line_obstacles:
 		print(check_intersection_scan([req.start_pos.point,req.goal_pos.point],line_obstacles))
 		if check_intersection_scan([req.start_pos.point,req.goal_pos.point],line_obstacles):
+			print("Found Intersection")
 			return DynamicResponse(False)
+	print("No Intersection")
 	return DynamicResponse(True)
 
 def obstacle_check():

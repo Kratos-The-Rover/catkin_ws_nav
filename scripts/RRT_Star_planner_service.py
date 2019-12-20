@@ -334,19 +334,23 @@ def handle_add_two_ints(req):
     start_time = time.time()
 
 
+
     path = rrt_star(goal_point = req.goal_pos, scan = scan_list, start_point= req.start_pos)
     print(path)
     print(type(path))
-    l=[]
-    for p in path:
-        a=Point_xy()
-        a.point=p
-        l.append(a)
-    b=PointArray()
-    b.points=l
+    
     if path is not None:
+        l=[]
+        for p in path:
+            a=Point_xy()
+            a.point=p
+            l.append(a)
+        b=PointArray()
+        b.points=l
     	return PlannerResponse(b,True)
     else:
+        b=PointArray()
+        b.points=[]
     	return PlannerResponse(b,False)
 
 def add_two_ints_server():

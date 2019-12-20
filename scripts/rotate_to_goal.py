@@ -13,7 +13,10 @@ roll = pitch = yaw = 0.0
 x = y = z = 0
 #target = 90
 kp=0.5
-flag=1
+
+command=0
+pub=0
+server=0
  
 def get_rotation (msg):
     global roll, pitch, yaw, x, y, z
@@ -28,9 +31,10 @@ def get_rotation (msg):
 
 def execute(goal):
     print("in execute")
-    global x,y,yaw,command,kp,server,r,flag,pub
+    global x,y,yaw,command,kp,server,r,pub
     flag=1
     while flag:
+
         #quat = quaternion_from_euler (roll, pitch,yaw)
         #print quat
         
@@ -40,14 +44,16 @@ def execute(goal):
         x_diff=dest_x-x
         dest_y = p[1]
         y_diff=dest_y-y
-        target_rad = dest_yaw=math.atan2(y_diff,x_diff)
-        if ((target_rad-yaw)>0.01):
+        target_rad = math.atan2(y_diff,x_diff)
+        if ((target_rad-yaw)>0.001):
+            print("did not reach target")
             command.angular.z = kp * (target_rad-yaw)
             feedback = RotateToGoalFeedback()
             feedback.angle_left = abs(target_rad-yaw)
             server.publish_feedback(feedback)
             pub.publish(command)
-        else:
+        else: 
+            print("reached target angle")
             command.angular.z=0
             pub.publish(command)
             result = RotateToGoalResult()
@@ -58,6 +64,7 @@ def execute(goal):
         print("target_angle={} current_angle:{}", target_rad,yaw)
         
 if __name__=="__main__":
+    #global pub,sub,server, command
     rospy.init_node('rotate_robot')
     command =Twist()
     sub = rospy.Subscriber ('/odom', Odometry, get_rotation)
