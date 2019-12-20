@@ -234,7 +234,7 @@ class RootClient(object):
 					self.move_client.send_goal(goal1, feedback_cb = self.commander_fb)
 					# rospy.loginfo("Asking the bot to move.")
 					self.move_client.wait_for_result(rospy.Duration.from_sec(100.0))
-					print("Bot has moved")
+					print("Bot has moved",self.currentOdom.pose.pose.position.x,self.currentOdom.pose.pose.position.y)
 
 					#remove first node when successful
 					print("Final path updated")
@@ -251,7 +251,7 @@ class RootClient(object):
 					# except rospy.ServiceException, e:
 					# 	print "Service call failed: %s"%e
 					break
-				print("Length of final_path",len(final_path.points))
+				print("updated final_path",final_path.points)
 			if(len(final_path.points)==1):
 				flag=0
 

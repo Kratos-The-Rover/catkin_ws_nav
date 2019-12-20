@@ -12,7 +12,7 @@ from navigation.msg import RotateToGoalAction, RotateToGoalGoal, RotateToGoalRes
 roll = pitch = yaw = 0.0
 x = y = z = 0
 #target = 90
-kp=0.5
+kp=0.6
 
 command=0
 pub=0
@@ -45,15 +45,15 @@ def execute(goal):
         dest_y = p[1]
         y_diff=dest_y-y
         target_rad = math.atan2(y_diff,x_diff)
-        if ((target_rad-yaw)>0.001):
+        if (abs(target_rad-yaw)>0.01):
             print("did not reach target")
             command.angular.z = kp * (target_rad-yaw)
             feedback = RotateToGoalFeedback()
             feedback.angle_left = abs(target_rad-yaw)
             server.publish_feedback(feedback)
             pub.publish(command)
-        else: 
-            print("reached target angle")
+        else : 
+            print("reached target angle",target_rad,yaw)
             command.angular.z=0
             pub.publish(command)
             result = RotateToGoalResult()

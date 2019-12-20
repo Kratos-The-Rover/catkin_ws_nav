@@ -8,7 +8,7 @@ from descartes import PolygonPatch
 import matplotlib.pyplot as plt
 
 PI = np.pi
-THRESHOLD = 0.25
+THRESHOLD = 0.4
 ALPHA = 10
 
 def make_obstacles_scan(scan_list):

@@ -40,10 +40,11 @@ def execute(goal):
         x_diff=dest_x-x
         dest_y = p[1]
         y_diff=dest_y-y
-        if ((x_diff>0.1) or (y_diff>0.1)):
-            command.linear.x = fwd_vel
+        dist=math.sqrt(x_diff**2+y_diff**2)
+        if ((x_diff>0.7) or (y_diff>0.7)):
+            command.linear.x = min(0.5,fwd_vel*dist)
             feedback = moveToGoalFeedback()
-            feedback.distance_left = math.sqrt(x_diff**2+y_diff**2)
+            feedback.distance_left = dist
             server.publish_feedback(feedback)
             pub.publish(command)
         else:
