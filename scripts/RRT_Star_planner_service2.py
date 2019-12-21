@@ -4,13 +4,16 @@ import numpy as np
 import sys
 import os
 import rospy
+from geometry_msgs.msg import Pose
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
 from navigation.msg import *
+from nav_msgs.msg import Odometry
+
 # from context import RRT, utils
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_for_scan')))
 
-from utils_scan import scan_obstacle_checker, make_obstacles_scan, check_intersection_scan
+from utils_scan import scan_obstacle_checker, make_obstacles_scan, check_intersection_scan, make_obstacles_global
 from utils_scan import adjustable_random_sampler as sampler
 from descartes import PolygonPatch
 from shapely.geometry import Polygon, Point, LineString
@@ -27,13 +30,12 @@ try:
 except ImportError:
     raise
 
+pose = Pose()
+
 def get_position (msg):
-    global x, y, z
+    global pose
     #orientation_q = msg.pose.pose.orientation
-    position_q= msg.pose.pose.position
-    x=position_q.x
-    y=position_q.y
-    z=position_q.z
+    pose = msg.pose.pose
 
 def find_near_nodes(node_list, new_node, circle_dist):
     """ To Find the nearest nodes at max circle_dist from new_node in node_list from new_node  """
@@ -88,6 +90,7 @@ class RRTStar(object):
         self.goal_sample_rate = goal_sample_rate
         self.circle = connect_circle_dist
         self.max_iter = max_iter
+        self.list_of_obstacles = []
 
     def __call__(self, goal_point, scan, start_point, animation=False):
         """Plans path from start to goal avoiding obstacles.
@@ -101,10 +104,17 @@ class RRTStar(object):
             start to goal while avoiding obstacles.
             An list containing just the start point means path could not be planned.
         """
-        search_until_max_iter = False
+        search_until_max_iter = True
 
         # Make line obstacles and scan in x,y from scan
-        line_obstacles, pts = make_obstacles_scan(scan)
+        line_obstacles, pts = make_obstacles_global(scan,pose)
+        #print(type(line_obstacles))
+        for line in line_obstacles:
+            self.list_of_obstacles.append(line)
+            if(len(self.list_of_obstacles)>50):
+                self.list_of_obstacles.pop()
+        #print(type(self.list_of_obstacles))
+
 
         # Setting Start and End
         a=start_point.point
@@ -192,7 +202,7 @@ class RRTStar(object):
             for index in nearest_indexes:
                 near_node = self.node_list[index]
                 point_list = [(near_node.x , near_node.y), (new_point[0],new_point[1])]
-                if not check_intersection_scan(point_list, line_obstacles):
+                if not check_intersection_scan(point_list, self.list_of_obstacles):
                     costs.append(near_node.cost + math.sqrt((near_node.x - new_point[0])**2 + (near_node.y - new_point[1])**2))
                 else:
                     costs.append(float("inf"))
@@ -222,7 +232,7 @@ class RRTStar(object):
                     node_check = self.node_list[ind]
                     point_list = [(new_node.x , new_node.y), (node_check.x , node_check.y)]
                     
-                    no_coll = not check_intersection_scan(point_list, line_obstacles)
+                    no_coll = not check_intersection_scan(point_list, self.list_of_obstacles)
                     cost_improv = new_node.cost + math.sqrt((new_node.x - node_check.x)**2 + (new_node.y - node_check.y)**2) < node_check.cost
 
                     if no_coll and cost_improv:

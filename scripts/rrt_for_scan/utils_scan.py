@@ -6,6 +6,7 @@ import cmath
 from shapely.geometry import Polygon, Point, LineString
 from descartes import PolygonPatch
 import matplotlib.pyplot as plt
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 PI = np.pi
 THRESHOLD = 0.6
@@ -13,6 +14,67 @@ ALPHA = 10
 #SHOW_ANIMATION=True
 MIN_ANGLE=-0.521567881107
 INCREMENT=0.00163668883033
+
+def local_to_global_pts(pts_in_local,pose):
+		pts_in_global=[]
+		x1=pose.position.x
+		y1=pose.position.y
+		orientation_q = pose.orientation
+		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+		(roll, pitch, theta1) = euler_from_quaternion (orientation_list)
+		for i in range(len(pts_in_local)):
+			x=pts_in_local[i][0]
+			y=pts_in_local[i][1]
+			theta2=math.atan2(y,x)
+			theta=theta1+theta2
+			r=math.sqrt(x**2+y**2)
+			x2=r*math.cos(theta)
+			y2=r*math.sin(theta)
+			pts_in_global.append([x1+x2,y1+y2])
+
+		return pts_in_global
+
+
+def make_obstacles_global(scan_list,pose):
+	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
+	pt_scan = np.array(scan_list)
+	pts = []
+	cos_of_pt_ang = np.cos(pt_ang)
+	sin_of_pt_ang = np.sin(pt_ang)
+	pt_x = np.multiply(pt_scan,cos_of_pt_ang)
+	pt_y = np.multiply(pt_scan,sin_of_pt_ang)
+
+	for a,b in zip(pt_x,pt_y):
+		pts.append((a,b))
+
+
+	pts=local_to_global_pts(pts,pose)
+	print(pts)
+
+
+	pt_scan = np.array(scan_list)
+	pt_scan_prev = np.append(pt_scan[1:],pt_scan[0])
+	# print(pt_scan_prev-pt_scan)
+	line_obst = abs(pt_scan_prev - pt_scan)>2*THRESHOLD
+	ind=np.argwhere(line_obst==True)
+	ind  = np.append(0 , ind)
+	ind  = np.append(ind, len(scan_list))
+
+	line_obstacles = []
+	pt_scan_enum = list(enumerate(scan_list))
+	for i in range(len(ind)-1):
+		line = [(pt[0] , pt[1]) for pt in pts[ind[i]+1:ind[i+1]+1]]
+		line_obstacles.append(line)
+	# data_x=[]
+	# data_y=[]
+	# for i in pts:
+	# 	data_x.append(i[0])
+	# 	data_y.append(i[1])
+	# # plt.plot([x for (x, y) in pts], [y for (x, y) in pts], 'r-')
+
+	
+	return (line_obstacles , pts)
+
 
 def make_obstacles_scan(scan_list):
 	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
@@ -39,29 +101,30 @@ def make_obstacles_scan(scan_list):
 	for i in range(len(ind)-1):
 		line = [(pt[0] , pt[1]) for pt in pts[ind[i]+1:ind[i+1]+1]]
 		line_obstacles.append(line)
-    
+	
+	
 	return (line_obstacles , pts)
 
 
 def adjustable_random_sampler(sample_area, goal, goal_sample_rate):
-    """Randomly sample point in area while sampling goal point 
-        at a specified rate.
+	"""Randomly sample point in area while sampling goal point 
+		at a specified rate.
 
-        Args:
-            sample_area: area to sample point in (min and max)
-            goal: tuple containing goal point coordinates.
-            goal_sample_rate: number between 0 and 1 specifying how often 
-                                to sample the goal point.
-    
-        Return:
-            Randomly selected point as a tuple.
-    """
+		Args:
+			sample_area: area to sample point in (min and max)
+			goal: tuple containing goal point coordinates.
+			goal_sample_rate: number between 0 and 1 specifying how often 
+								to sample the goal point.
+	
+		Return:
+			Randomly selected point as a tuple.
+	"""
 
-    if random.random() > goal_sample_rate:
-        return (random.uniform(sample_area[0], sample_area[1]), 
-                random.uniform(sample_area[0], sample_area[1]))
-    else:
-        return goal
+	if random.random() > goal_sample_rate:
+		return (random.uniform(sample_area[0], sample_area[1]), 
+				random.uniform(sample_area[0], sample_area[1]))
+	else:
+		return goal
 
 
 def scan_obstacle_checker(scan_list , point):
@@ -147,9 +210,9 @@ def check_intersection_scan(point_list , line_obstacles):
 	#print("I am in utils")
 	#print(line_obstacles)
 	direct_line = LineString(point_list)
-        line_obstacles = line_obstacles[:-1]
-        #print(len(line_obstacles))
-        
+	line_obstacles = line_obstacles[:-1]
+		#print(len(line_obstacles))
+		
 	#Check if the direct_line is at least THRESHOLD distance away from every LineString Obstacles
 	for obstacle in line_obstacles:
 		if(len(obstacle)>1):
@@ -178,33 +241,33 @@ def visualize_scan(path, scan_list):
 	for a,b in zip(pt_x,pt_y):
 		pts.append((a,b))
 
-    # Clear the figure
+	# Clear the figure
 	plt.clf()
 
-    # Plot each point in the path
+	# Plot each point in the path
 	plt.plot([x for (x, _) in path], [y for (_, y) in path],'b')
 	plt.plot([x for (x, _) in pts], [y for (_, y) in pts],'r.')
 	plt.axis((-5,5,-5,5))
-    
+	
 	plt.show()
 
 def los_optimizer_scan(path , line_obstacles):
 	"""Line of Sight Path Optimizer for Scan.
 
-        For each point in the path, it checks if there is a direct
-        connection to procceeding points which does not pass through
-        any obstacles. By joining such points, number of uneccessary
-        points in the path are reduced.
+		For each point in the path, it checks if there is a direct
+		connection to procceeding points which does not pass through
+		any obstacles. By joining such points, number of uneccessary
+		points in the path are reduced.
 
-        Args:
-            path: list of tuples containing coordinates for a point in path..
-            obstacle_list: list of obstacles.
+		Args:
+			path: list of tuples containing coordinates for a point in path..
+			obstacle_list: list of obstacles.
 
-        Returns:
-            Optimized path as a list of tuples containing coordinates.
-            If path is found to be intersecting with any obstacle and
-            there is no lookahead optimization which avoids this, then
-            only the path uptill the intersection is returned.
+		Returns:
+			Optimized path as a list of tuples containing coordinates.
+			If path is found to be intersecting with any obstacle and
+			there is no lookahead optimization which avoids this, then
+			only the path uptill the intersection is returned.
 	"""
 
 	# Init optimized path with the start as first point in path.
