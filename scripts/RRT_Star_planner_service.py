@@ -93,7 +93,7 @@ class RRTStar(object):
             start to goal while avoiding obstacles.
             An list containing just the start point means path could not be planned.
         """
-        search_until_max_iter = True
+        search_until_max_iter = False
 
         # Make line obstacles and scan in x,y from scan
         line_obstacles, pts = make_obstacles_scan(scan)
@@ -168,7 +168,7 @@ class RRTStar(object):
                 py.append(self.start.y)
                 new_node.path_x = px[:]
                 new_node.path_y = py[:]
-
+                self.node_list.append(new_node)
                 if animation and iter % 5 == 0:
                     self.draw_graph(scan, new_node)
 

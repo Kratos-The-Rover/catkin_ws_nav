@@ -209,11 +209,13 @@ class RootClient(object):
 				print("LOCAL GOAL",local_goal)
 				response = self.rrt_star_path(Point_xy([0,0]),local_goal,self.scan_list)
 				if response.ack:
+					
 					local_path = response.path
 					print("local path",local_path)
 					final_path = self.local_to_global_path(local_path)
 					print("path calculated",final_path)
 				else:
+
 					print("Path not found! Retrying!")
 					continue
 			except rospy.ServiceException, e:

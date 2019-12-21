@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 PI = np.pi
 THRESHOLD = 0.6
 ALPHA = 10
+#SHOW_ANIMATION=True
+MIN_ANGLE=-0.521567881107
+INCREMENT=0.00163668883033
 
 def make_obstacles_scan(scan_list):
 	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
@@ -36,7 +39,7 @@ def make_obstacles_scan(scan_list):
 	for i in range(len(ind)-1):
 		line = [(pt[0] , pt[1]) for pt in pts[ind[i]+1:ind[i+1]+1]]
 		line_obstacles.append(line)
-
+    
 	return (line_obstacles , pts)
 
 
@@ -87,7 +90,7 @@ def scan_obstacle_checker(scan_list , point):
 
 	for obstacle in scan_list_enum:
 		# Checking the absolute of vector difference from each coordinate to be greater than THRESHOLD
-		if abs(complex(cmath.rect(obstacle[1],obstacle[0]*PI/180) - complex(cmath.rect(rho,phi))))<THRESHOLD:
+		if abs(complex(cmath.rect(obstacle[1],MIN_ANGLE+obstacle[0]*INCREMENT) - complex(cmath.rect(rho,phi))))<THRESHOLD:
 			return float('nan'),float('nan')
 	return point
 

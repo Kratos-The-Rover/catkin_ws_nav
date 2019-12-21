@@ -13,7 +13,7 @@ from sensor_msgs.msg import LaserScan
 
 # from context import RRT, utils
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../rrt_for_scan')))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../rrt_star')))
 from utils_scan import scan_obstacle_checker, make_obstacles_scan, check_intersection_scan
 from utils_scan import adjustable_random_sampler as sampler
 from descartes import PolygonPatch
@@ -24,16 +24,17 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../rrt_for_scan/")
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../rrt_star')))
 
 
 try:
-    from RRT import RRT
+    from rrt import RRT
 except ImportError:
     raise
 
 show_animation = True
 
-start_time = 0
+#start_time = 0
 #list_of_obstacles=[]
 #final_path = []
 
@@ -115,7 +116,7 @@ class RRTStar(object):
         self.circle = connect_circle_dist
         self.max_iter = max_iter
 
-    def __call__(self, goal_point, scan, start_point=[0, 0], animation=False):
+    def __call__(self, goal_point, scan, start_point=[0, 0], animation=True):
         """Plans path from start to goal avoiding obstacles.
         Args:
             start_point: tuple with start point coordinates.
@@ -131,6 +132,7 @@ class RRTStar(object):
 
         # Make line obstacles and scan in x,y from scan
         line_obstacles, pts = make_obstacles_scan(scan)
+        # line_obstacles
 
         # Setting Start and End
         self.start = Node(start_point[0], start_point[1])
@@ -141,6 +143,11 @@ class RRTStar(object):
 
         # Loop for maximum iterations to get the best possible path
         for iter in range(self.max_iter):
+            ########################################
+            print("ITER-->")
+            print(iter)
+            ########################################
+
             #########################################
             # print("NODE_LIST-->")
             # for printer_i in self.node_list:
@@ -177,8 +184,8 @@ class RRTStar(object):
 
             if math.isnan(new_point[0]):
                 ########################################
-                # print("ISNAN-->")
-                # print(new_point)
+                print("ISNAN-->")
+                print(new_point)
                 ########################################
                 continue
 
@@ -200,6 +207,7 @@ class RRTStar(object):
                 py.append(self.start.y)
                 new_node.path_x = px[:]
                 new_node.path_y = py[:]
+                self.node_list.append(new_node)
 
                 if animation and iter % 5 == 0:
                     self.draw_graph(scan, new_node)
@@ -234,8 +242,8 @@ class RRTStar(object):
             new_node.cost = min_cost
 
             #########################################
-            # print("NEW_NODE-->")
-            # print(new_node.x , new_node.y , new_node.cost)
+            print("NEW_NODE-->")
+            print(new_node.x , new_node.y , new_node.cost)
             #########################################
 
             if new_node:
@@ -263,6 +271,7 @@ class RRTStar(object):
                 py.append(self.start.y)
                 new_node.path_x = px[:]
                 new_node.path_y = py[:]
+
             if animation and iter % 5 == 0:
                 self.draw_graph(scan, new_node)
 
@@ -289,6 +298,26 @@ class RRTStar(object):
             return path
         return None
 
+    # def local_to_global_pts(self,path_in_local):
+    #     path_in_global=[]
+    #     x1=self.currentOdom.pose.pose.position.x
+    #     y1=self.currentOdom.pose.pose.position.y
+    #     orientation_q = self.currentOdom.pose.pose.orientation
+    #     orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+    #     (roll, pitch, theta1) = euler_from_quaternion (orientation_list)
+        
+    #     for i in range(len(path_in_local.points)):
+    #         x=path_in_local.points[i].point[0]
+    #         y=path_in_local.points[i].point[1]
+    #         theta2=math.atan2(y,x)
+    #         theta=theta1+theta2
+    #         r=math.sqrt(x**2+y**2)
+    #         x2=r*math.cos(theta)
+    #         y2=r*math.sin(theta)
+    #         path_in_global.points.append(Point_xy([x1+x2,y1+y2]))
+    #     return path_in_global
+
+
     def draw_graph(self, scan, rnd=None):
         plt.clf()
         pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
@@ -312,7 +341,7 @@ class RRTStar(object):
         plt.plot(self.start.x, self.start.y, "xr")
         plt.plot(self.goal.x, self.goal.y, "xr")
         plt.axis("equal")
-        plt.axis((-5,5,-5,5))
+        plt.axis((-10,10,-10,10))
         plt.grid(True)
         plt.pause(0.01)
 
@@ -367,20 +396,20 @@ def callback(data):
             scan_list[i] = 100
     scan_list = tuple(scan_list)
     print("This is scan List ---------------------------------------------------->")
-    print(len(scan_list))
+    print((scan_list))
     
    # if(rospy.get_time()-start_time<5):
 	#list_of_obstacles=dynamic_obstacle_addition(list_of_obstacles,scan_list)
     #    start_time = rospy.get_time()
 
     # Set Initial parameters
-    rrt_star = RRTStar(sample_area=[-50, 50])
+    rrt_star = RRTStar(sample_area=[-10, 10])
 
     print('\n ' + '-'*30 +  "\n> Starting operation ...\n " + '-'*30 + '\n')
     start_time = time.time()
 
 
-    path = rrt_star(goal_point = [4.3793895500565405, 0.25943014554867627], scan = scan_list)
+    path = rrt_star(goal_point = [5.917878300568243, -1.7143409531979132], scan = scan_list)
 
     print('\n ' + '-'*30 + "\n> Time taken: {:.4} seconds.\n ".format(time.time() - start_time) + '-'*30 + '\n')
 
@@ -413,6 +442,7 @@ def main():
     rospy.init_node('listener', anonymous=True)
 
     rospy.Subscriber("scan", LaserScan, callback)
+    #rospy.Subscriber("odom",Odometry,odom_cb)
 	
 
     # spin() simply keeps python from exiting until this node is stopped
