@@ -27,13 +27,7 @@ try:
 except ImportError:
     raise
 
-def get_position (msg):
-    global x, y, z
-    #orientation_q = msg.pose.pose.orientation
-    position_q= msg.pose.pose.position
-    x=position_q.x
-    y=position_q.y
-    z=position_q.z
+
 
 def find_near_nodes(node_list, new_node, circle_dist):
     """ To Find the nearest nodes at max circle_dist from new_node in node_list from new_node  """
@@ -383,5 +377,4 @@ def add_two_ints_server():
     rospy.spin()
 
 if __name__ == "__main__":
-    sub = rospy.Subscriber ('/odom', Odometry, get_position)
     add_two_ints_server()

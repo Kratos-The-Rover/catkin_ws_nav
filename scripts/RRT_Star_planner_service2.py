@@ -13,13 +13,15 @@ from nav_msgs.msg import Odometry
 # from context import RRT, utils
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_for_scan')))
 
-from utils_scan import scan_obstacle_checker, make_obstacles_scan, check_intersection_scan, make_obstacles_global
+from utils_scan import scan_obstacle_checker, make_obstacles_scan, check_intersection_scan, make_obstacles_global, scan_obstacle_global
 from utils_scan import adjustable_random_sampler as sampler
 from descartes import PolygonPatch
 from shapely.geometry import Polygon, Point, LineString
 import random
-import math, time
-import matplotlib.pyplot as plt
+import math, time , matplotlib
+#matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/./rrt_for_scan/")
@@ -31,7 +33,9 @@ except ImportError:
     raise
 
 pose = Pose()
-
+LIST_SIZE=640
+list_of_obstacles = []
+list_of_pts = []
 def get_position (msg):
     global pose
     #orientation_q = msg.pose.pose.orientation
@@ -90,9 +94,11 @@ class RRTStar(object):
         self.goal_sample_rate = goal_sample_rate
         self.circle = connect_circle_dist
         self.max_iter = max_iter
-        self.list_of_obstacles = []
+        # self.list_of_obstacles = []
+        # self.list_of_pts = []
 
-    def __call__(self, goal_point, scan, start_point, animation=False):
+    def __call__(self, goal_point, scan, start_point, animation=True):
+        global list_of_pts,list_of_obstacles
         """Plans path from start to goal avoiding obstacles.
         Args:
             start_point: tuple with start point coordinates.
@@ -104,16 +110,24 @@ class RRTStar(object):
             start to goal while avoiding obstacles.
             An list containing just the start point means path could not be planned.
         """
-        search_until_max_iter = True
+        search_until_max_iter = False
 
         # Make line obstacles and scan in x,y from scan
         line_obstacles, pts = make_obstacles_global(scan,pose)
-        #print(type(line_obstacles))
+        # print(line_obstacles)
+        for pt in pts:
+            list_of_pts.append(pt)
+            # if(len(list_of_pts)>50*LIST_SIZE):
+            #     list_of_pts.pop()
+        print(len(list_of_pts))
+
         for line in line_obstacles:
-            self.list_of_obstacles.append(line)
-            if(len(self.list_of_obstacles)>50):
-                self.list_of_obstacles.pop()
-        #print(type(self.list_of_obstacles))
+            list_of_obstacles.append(line)
+            # if(len(list_of_obstacles)>50):
+            #     list_of_obstacles.pop()
+        print(len(list_of_obstacles))
+        
+        # print(self.list_of_obstacles)
 
 
         # Setting Start and End
@@ -151,15 +165,15 @@ class RRTStar(object):
             # Creating a new Point in the Direction of sampled point
             theta = math.atan2(rnd_point[1] - nearest_node.y,
                                rnd_point[0] - nearest_node.x)
-            new_point = nearest_node.x + self.expand_dis*math.cos(theta), \
-                        nearest_node.y + self.expand_dis*math.sin(theta)
+            new_point = nearest_node.x + self.expand_dis*math.cos(theta), nearest_node.y + self.expand_dis*math.sin(theta)
             
             #########################################
             # print("NEW_POINT-->")
             # print(new_point[0],new_point[1])
             #########################################
             # Check obstacle collision
-            new_point = scan_obstacle_checker(scan, new_point)
+            #update
+            new_point = scan_obstacle_global(list_of_pts, new_point)
 
             if math.isnan(new_point[0]):
                 ########################################
@@ -188,7 +202,7 @@ class RRTStar(object):
                 new_node.path_y = py[:]
                 self.node_list.append(new_node)
                 if animation and iter % 5 == 0:
-                    self.draw_graph(scan, new_node)
+                    self.draw_graph(scan, list_of_obstacles, new_node)
 
                 continue
 
@@ -202,7 +216,7 @@ class RRTStar(object):
             for index in nearest_indexes:
                 near_node = self.node_list[index]
                 point_list = [(near_node.x , near_node.y), (new_point[0],new_point[1])]
-                if not check_intersection_scan(point_list, self.list_of_obstacles):
+                if not check_intersection_scan(point_list, list_of_obstacles):
                     costs.append(near_node.cost + math.sqrt((near_node.x - new_point[0])**2 + (near_node.y - new_point[1])**2))
                 else:
                     costs.append(float("inf"))
@@ -232,7 +246,7 @@ class RRTStar(object):
                     node_check = self.node_list[ind]
                     point_list = [(new_node.x , new_node.y), (node_check.x , node_check.y)]
                     
-                    no_coll = not check_intersection_scan(point_list, self.list_of_obstacles)
+                    no_coll = not check_intersection_scan(point_list, list_of_obstacles)
                     cost_improv = new_node.cost + math.sqrt((new_node.x - node_check.x)**2 + (new_node.y - node_check.y)**2) < node_check.cost
 
                     if no_coll and cost_improv:
@@ -250,7 +264,7 @@ class RRTStar(object):
                 new_node.path_x = px[:]
                 new_node.path_y = py[:]
             if animation and iter % 5 == 0:
-                self.draw_graph(scan, new_node)
+                self.draw_graph(scan, global_obstacle = list_of_obstacles, rnd=new_node)
 
             if (not search_until_max_iter) and new_node:  # check reaching the goal
                 last_index = self.search_best_goal_node(scan)
@@ -275,8 +289,9 @@ class RRTStar(object):
             return path
         return None
 
-    def draw_graph(self, scan, rnd=None):
+    def draw_graph(self, scan, global_obstacle=[] , rnd=None):
         plt.clf()
+
         pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
         pt_scan = np.array(scan)
         pts = []
@@ -295,6 +310,10 @@ class RRTStar(object):
         # for (ox, oy, size) in self.obstacle_list:
         #     self.plot_circle(ox, oy, size)
         plt.plot([x for (x, _) in pts], [y for (_, y) in pts],'r.')
+        #print(global_obstacle)
+        for o in global_obstacle:
+            plt.plot([x for (x, _) in o], [y for (_, y) in o], 'k-')
+
         plt.plot(self.start.x, self.start.y, "xr")
         plt.plot(self.goal.x, self.goal.y, "xr")
         plt.axis("equal")
@@ -380,6 +399,8 @@ def handle_add_two_ints(req):
             prev=p
         b=PointArray()
         b.points=l
+        plt.close() 
+
     	return PlannerResponse(b,True)
     else:
         b=PointArray()

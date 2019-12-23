@@ -65,7 +65,7 @@ class RootClient(object):
 
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb,queue_size=10)
 		self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
-		self.goal_sub = rospy.Subscriber('/goal', Point_xy, self.goal_cb)
+		self.goal_sub = rospy.Subscriber('/goal2', Point_xy, self.goal_cb)
 		#self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
 		self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
 		self.move_client = actionlib.SimpleActionClient('commander', moveToGoalAction)

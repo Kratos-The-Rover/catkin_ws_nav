@@ -5,13 +5,15 @@ import math
 import cmath
 from shapely.geometry import Polygon, Point, LineString
 from descartes import PolygonPatch
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 PI = np.pi
 THRESHOLD = 0.6
 ALPHA = 10
-#SHOW_ANIMATION=True
+SHOW_ANIMATION=True
 MIN_ANGLE=-0.521567881107
 INCREMENT=0.00163668883033
 
@@ -30,7 +32,7 @@ def local_to_global_pts(pts_in_local,pose):
 			r=math.sqrt(x**2+y**2)
 			x2=r*math.cos(theta)
 			y2=r*math.sin(theta)
-			pts_in_global.append([x1+x2,y1+y2])
+			pts_in_global.append([round(x1+x2,2),round(y1+y2,2)])
 
 		return pts_in_global
 
@@ -46,10 +48,12 @@ def make_obstacles_global(scan_list,pose):
 
 	for a,b in zip(pt_x,pt_y):
 		pts.append((a,b))
-
+	
+	plt.plot([x for (x, _) in pts], [y for (_, y) in pts], 'r.')
+	
 
 	pts=local_to_global_pts(pts,pose)
-	print(pts)
+	#print(pts)
 
 
 	pt_scan = np.array(scan_list)
@@ -65,13 +69,13 @@ def make_obstacles_global(scan_list,pose):
 	for i in range(len(ind)-1):
 		line = [(pt[0] , pt[1]) for pt in pts[ind[i]+1:ind[i+1]+1]]
 		line_obstacles.append(line)
-	# data_x=[]
-	# data_y=[]
-	# for i in pts:
-	# 	data_x.append(i[0])
-	# 	data_y.append(i[1])
-	# # plt.plot([x for (x, y) in pts], [y for (x, y) in pts], 'r-')
 
+	plt.plot([x for (x, _) in pts], [y for (_, y) in pts], 'k.')
+	plt.plot(pose.position.x , pose.position.y, 'b*')
+	plt.axis((-5,5,-5,5))
+	plt.grid(True)	
+
+	plt.show()
 	
 	return (line_obstacles , pts)
 
@@ -86,13 +90,14 @@ def make_obstacles_scan(scan_list):
 	pt_y = np.multiply(pt_scan,sin_of_pt_ang)
 
 	for a,b in zip(pt_x,pt_y):
+
 		pts.append((a,b))
 
 	pt_scan = np.array(scan_list)
 	pt_scan_prev = np.append(pt_scan[1:],pt_scan[0])
 	# print(pt_scan_prev-pt_scan)
 	line_obst = abs(pt_scan_prev - pt_scan)>2*THRESHOLD
-	ind=np.argwhere(line_obst==True)
+	ind = np.argwhere(line_obst==True)
 	ind  = np.append(0 , ind)
 	ind  = np.append(ind, len(scan_list))
 
@@ -125,6 +130,14 @@ def adjustable_random_sampler(sample_area, goal, goal_sample_rate):
 				random.uniform(sample_area[0], sample_area[1]))
 	else:
 		return goal
+
+#update function
+def scan_obstacle_global(pt_list, point):
+	for pt in pt_list:
+		dist=math.sqrt((pt[0]-point[0])**2+(pt[1]-point[1])**2)
+		if(dist<THRESHOLD):
+			return float('nan'),float('nan')
+	return point
 
 
 def scan_obstacle_checker(scan_list , point):
@@ -194,6 +207,7 @@ def scan_obstacle_checker(scan_list , point):
 	# 			return float('nan'),float('nan')
 	# 	return point
 		
+
 
 def check_intersection_scan(point_list , line_obstacles):
 	"""Check whether line passes through any Scan obstacle.
