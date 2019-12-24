@@ -4,7 +4,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_for_scan')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), './rrt_star')))
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
 import math
 import numpy as np
 import rospy
@@ -18,7 +18,7 @@ import roslib
 roslib.load_manifest('navigation')
 import actionlib
 
-from navigation.msg import moveToGoalAction, moveToGoalGoal, RotateToGoalGoal, RotateToGoalAction, Point_xy, PointArray
+from navigation.msg import moveToGoalAction, moveToGoalGoal, RotateToGoalGoal, RotateToGoalAction, Point_xy
 #import service module and message file
 
 
@@ -47,9 +47,9 @@ class RootClient(object):
 		#rrt_star Planner Service 
 
 		#class variables initialized:
-		self.flag=0
+
 		self.start = Point_xy([0,0])
-		self.goal = Point_xy([0,0])
+		self.goal = Point_xy([5,4])
 		self.final_dest = [0,0]
 		self.scan_list = []
 
@@ -64,8 +64,7 @@ class RootClient(object):
 
 
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb,queue_size=10)
-		self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
-		self.goal_sub = rospy.Subscriber('/goal2', Point_xy, self.goal_cb)
+		#self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
 		#self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
 		self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
 		self.move_client = actionlib.SimpleActionClient('commander', moveToGoalAction)
@@ -84,7 +83,7 @@ class RootClient(object):
 		Attributes: sets self.scan_list
 		Return: None
 		"""
-		#print("In Scan_CB")
+		print("In Scan_CB")
 		self.scan_list = scan_data.ranges
 		self.scan_list = list(self.scan_list)
 		for i in range(len(self.scan_list)):
@@ -97,28 +96,17 @@ class RootClient(object):
 		#     #converting nan values to some number
 		#         self.scan_list[i] = 1000            
 		# self.scan_list = tuple(self.scan_list)
-		#print("Scan_CB DONE")
+		print("Scan_CB DONE")
 
 	def odom_cb(self, odom_data):
-		#print("In Odom_CB")
+		print("In Odom_CB")
 		"""
 		Args: odom_data --> nav_msgs/Odometry
 		Attributes: sets self.currentOdom
 		Return: None 
 		"""
 		self.currentOdom = odom_data
-		#print("Odom_CB DONE")
-	def goal_cb(self , goal_data):
-		"""
-		Args: goal_data --> navigation/NavSatFix
-		Attributes: sets self.goal and self.flag
-		Return: None 
-		"""
-		self.flag=1
-		self.goal = goal_data
-		#self.start = Point_xy([self.currentOdom.pose.pose.position.x],[currentOdom.pose.pose.position.y])
-		print("received goal",self.goal)
-		self.main()
+		print("Odom_CB DONE")
 
 	def gps_cb(self , gps_data):
 		"""
@@ -129,67 +117,24 @@ class RootClient(object):
 		self.currentgps = gps_data
 	
 	def commander_fb(self, fb_data):
-		# print("In Commander_FB")
+		print("In Commander_FB")
 		"""
 		Args: feedback from commander
 		Attributes: prints feedback from commander
 		Return: None 
 		"""
-		#rospy.loginfo(fb_data.distance_left)
-		# print("Commander_FB DONE")
-		pass
+		rospy.loginfo(fb_data.distance_left)
+		print("Commander_FB DONE")
 	
 	def rotator_fb(self, fb_data):
-		# print("In Rotator_FB")
+		print("In Rotator_FB")
 		"""
 		Args: feedback from commander
 		Attributes: prints feedback from commander
 		Return: None 
 		"""
-		
-		#rospy.loginfo(fb_data.angle_left)
-		# print("ROtator_FB DONE")X
-		pass
-	
-
-	def global_to_local_goal(self,pt_in_global):
-		x2=pt_in_global.point[0]
-		y2=pt_in_global.point[1]
-		x1=self.currentOdom.pose.pose.position.x
-		y1=self.currentOdom.pose.pose.position.y
-		y_diff=y2-y1
-		x_diff=x2-x1
-		#dest_yaw = math.atan2(y_diff,x_diff)
-		orientation_q = self.currentOdom.pose.pose.orientation
-		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-		(roll, pitch, curr_yaw) = euler_from_quaternion (orientation_list)
-		#theta=dest_yaw-curr_yaw
-		#r=math.sqrt(x_diff**2+y_diff**2)
-		x_ret=x_diff*math.cos(curr_yaw)+y_diff*math.sin(curr_yaw)
-		y_ret=-x_diff*math.sin(curr_yaw)+y_diff*math.cos(curr_yaw)
-		return Point_xy([x_ret,y_ret])
-	
-
-	def local_to_global_path(self,path_in_local):
-		path_in_global=PointArray()
-		x1=self.currentOdom.pose.pose.position.x
-		y1=self.currentOdom.pose.pose.position.y
-		orientation_q = self.currentOdom.pose.pose.orientation
-		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-		(roll, pitch, theta1) = euler_from_quaternion (orientation_list)
-		
-		for i in range(len(path_in_local.points)):
-			x=path_in_local.points[i].point[0]
-			y=path_in_local.points[i].point[1]
-			theta2=math.atan2(y,x)
-			theta=theta1+theta2
-			r=math.sqrt(x**2+y**2)
-			x2=r*math.cos(theta)
-			y2=r*math.sin(theta)
-			path_in_global.points.append(Point_xy([x1+x2,y1+y2]))
-		return path_in_global
-
-
+		rospy.loginfo(fb_data.angle_left)
+		print("ROtator_FB DONE")
 	def main(self):
 		print("In MAIN")
 		"""
@@ -200,25 +145,17 @@ class RootClient(object):
 		# rospy.set_param('start_location',"["+str(self.currentgps.latitude)+","+str(self.currentgps.longitude)+"]")
 
 		# while not rospy.is_shutdown:
-		
-		while(self.flag):
+		flag=1
+		while(flag):
 			final_path = []
 			# self.goal = rospy.get_param('')
 			try:
 				print("Calculating RRT-PATH")
-				local_goal=self.goal
-				#print("LOCAL GOAL",local_goal)
-				x1=self.currentOdom.pose.pose.position.x
-				y1=self.currentOdom.pose.pose.position.y
-				response = self.rrt_star_path(Point_xy([x1,y1]),local_goal,self.scan_list)
+				response = self.rrt_star_path(self.start,self.goal,self.scan_list)
 				if response.ack:
-					
 					final_path = response.path
-					#print("local path",local_path)
-					#final_path = self.local_to_global_path(local_path)
 					print("path calculated",final_path)
 				else:
-
 					print("Path not found! Retrying!")
 					continue
 			except rospy.ServiceException, e:
@@ -230,7 +167,7 @@ class RootClient(object):
 				goal2 = RotateToGoalGoal()
 				goal2.goal = final_path.points[-2]
 				self.rotate_client.send_goal(goal2, feedback_cb = self.rotator_fb)
-				self.rotate_client.wait_for_result()
+				self.rotate_client.wait_for_result(rospy.Duration.from_sec(100.0))
 				print("Done rotating the bot")
 				
 				# rospy.loginfo("Asking the bot to move.")
@@ -240,7 +177,7 @@ class RootClient(object):
 				x2=final_path.points[-2].point[0]
 				y2=final_path.points[-2].point[1]
 				dist=math.sqrt((x2-x1)**2+(y2-y1)**2)
-				response_1 = self.dynamic_manager(Point_xy([0,0]),Point_xy([dist,0]), self.scan_list)
+				response_1 = self.dynamic_manager(Point_xy([0,0]),Point_xy([dist,0]),self.scan_list)
 				#response_1 = self.dynamic_manager(final_path.points[-1],final_path.points[-2],self.scan_list)
 				if response_1.ack:
 					print("No intersection!!!!")
@@ -251,7 +188,7 @@ class RootClient(object):
 					self.move_client.send_goal(goal1, feedback_cb = self.commander_fb)
 					# rospy.loginfo("Asking the bot to move.")
 					self.move_client.wait_for_result(rospy.Duration.from_sec(100.0))
-					print("Bot has moved",self.currentOdom.pose.pose.position.x,self.currentOdom.pose.pose.position.y)
+					print("Bot has moved")
 
 					#remove first node when successful
 					print("Final path updated")
@@ -268,12 +205,11 @@ class RootClient(object):
 					# except rospy.ServiceException, e:
 					# 	print "Service call failed: %s"%e
 					break
-				print("updated final_path",final_path.points)
 			if(len(final_path.points)==1):
-				self.flag=0
+				flag=0
 
-		print("************************GOAL REACHED************************")
-	
+		rospy.signal_shutdown("************************GOAL REACHED************************")
+		
 
 if __name__ == "__main__":
 	rospy.init_node("controller_client", anonymous=True)
@@ -290,7 +226,7 @@ if __name__ == "__main__":
 	print("Calling RootClient")    
 	o = RootClient()
 	print("Calling Main")
-	# o.main()
+	o.main()
 	print("RosSpin")
 	rospy.spin()
 	rospy.logwarn("Killing!")

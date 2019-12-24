@@ -1,0 +1,13 @@
+<launch>
+	<node pkg="navigation" type="RRT_Star_planner_service.py" name="RRT_Star_Planner_Service" output="log">
+	</node>
+	
+	<node pkg="navigation" type="dynamic_planner_service.py" name="dynamic_planner_service" output="log">
+	</node>
+	<node pkg="navigation" type="move_to_goal.py" name="move_to_goal" output="log">
+	</node>
+	<node pkg="navigation" type="rotate_to_goal.py" name="rotate_to_goal" output="log">
+	</node>
+	<node pkg="navigation" type="controller_client.py" name="controller_client" output="screen">
+	</node>
+</launch>
