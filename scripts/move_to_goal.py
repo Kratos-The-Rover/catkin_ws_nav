@@ -9,11 +9,17 @@ import roslib
 roslib.load_manifest('navigation')
 from navigation.msg import moveToGoalAction, moveToGoalGoal, moveToGoalResult, moveToGoalFeedback, Point_xy
  
+ 
+#Initializing global variables
 roll = pitch = yaw = 0.0
 x = y = z = 0
 #target = 90
 fwd_vel= 0.3
 flag=1
+
+'''
+Setting the current position of the bot
+'''
  
 def get_position (msg):
     global roll, pitch, yaw, x, y, z
@@ -25,6 +31,14 @@ def get_position (msg):
     #orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
     #(roll, pitch, yaw) = euler_from_quaternion (orientation_list)
     # print yaw
+    
+'''
+Here we calculate the distance that needs to be traversed by the bot to send it as feedback
+'p' is the current position of the bot
+'dist' is the current distance that is yet to be traversed
+Here we check whether the position attained by the bot is within the threshold value (with respect to the destination)
+if not then we continue to move, otherwise we send the result to the client
+'''
 
 def execute(goal):
     print("in execute")
@@ -62,6 +76,10 @@ def execute(goal):
         print("publishing")
         print("target pos={} current pos:{}", (dest_x,dest_y),(x,y))
         
+        
+'''
+Initializing the Subscriber(Odom), Publisher(cmd_vel), ActionServer(Move_to_goal)
+'''
 if __name__=="__main__":
     rospy.init_node('move_robot')
     command =Twist()
