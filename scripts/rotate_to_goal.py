@@ -9,6 +9,7 @@ import roslib
 roslib.load_manifest('navigation')
 from navigation.msg import RotateToGoalAction, RotateToGoalGoal, RotateToGoalResult, RotateToGoalFeedback, Point_xy
  
+#Initiliazing global values 
 roll = pitch = yaw = 0.0
 x = y = z = 0
 #target = 90
@@ -18,6 +19,11 @@ command=0
 pub=0
 server=0
  
+ 
+'''
+Setting the values of roll, pitch and yaw; x and y (current position)
+Call back function of ODOM
+'''
 def get_rotation (msg):
     global roll, pitch, yaw, x, y, z
     orientation_q = msg.pose.pose.orientation
@@ -28,6 +34,15 @@ def get_rotation (msg):
     orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
     (roll, pitch, yaw) = euler_from_quaternion (orientation_list)
     # print yaw
+    
+'''
+Here we find the target angle.
+'p' is the goal point
+'x' and 'y'is the current position
+angle is found by calculating tan inverse 
+If the target_rad value is greater than the dest_rad value (actual value to which we need to rotate), we continue to rotate
+otherwise we have achieved our target
+'''
 
 def execute(goal):
     print("in execute")
@@ -63,6 +78,9 @@ def execute(goal):
         print("publishing")
         print("target_angle={} current_angle:{}", target_rad,yaw)
         
+'''
+Initializing the Subscriber (Odom), Publisher (cmd_vel), ActionServer (Rotate_to_goal)
+'''
 if __name__=="__main__":
     #global pub,sub,server, command
     rospy.init_node('rotate_robot')
