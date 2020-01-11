@@ -73,7 +73,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate actions in the 'action' folder
  add_action_files(
 
-DIRECTORY action FILES moveToGoal.action RotateToGoal.action
+DIRECTORY action FILES moveToGoal.action RotateToGoal.action RotateToAngle.action
 #   FILES
 #   Action1.action
 #   Action2.action

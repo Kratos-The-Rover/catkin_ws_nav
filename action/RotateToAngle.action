@@ -1,0 +1,8 @@
+# Define the goal
+float64 goal_angle 
+---
+# Define the result
+bool result
+---
+# Define a feedback message
+float64 angle_left
