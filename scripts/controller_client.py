@@ -151,7 +151,9 @@ class RootClient(object):
 		# print("ROtator_FB DONE")X
 		pass
 	
-
+	'''
+	This function brings the goal point with respect to the bot's frame of reference
+	'''
 	def global_to_local_goal(self,pt_in_global):
 		x2=pt_in_global.point[0]
 		y2=pt_in_global.point[1]
@@ -169,7 +171,9 @@ class RootClient(object):
 		y_ret=-x_diff*math.sin(curr_yaw)+y_diff*math.cos(curr_yaw)
 		return Point_xy([x_ret,y_ret])
 	
-
+	'''
+	This function brings the entire path which is in the frame of the bot to the global frame
+	'''
 	def local_to_global_path(self,path_in_local):
 		path_in_global=PointArray()
 		x1=self.currentOdom.pose.pose.position.x
@@ -189,7 +193,12 @@ class RootClient(object):
 			path_in_global.points.append(Point_xy([x1+x2,y1+y2]))
 		return path_in_global
 
-
+	'''
+	Here we run the loop till we don't have any more points in the final_path list. After every traversale we remove the previous node
+	from the list.
+	Here after we get the final_path list, we rotate the bot in the next node's orientation and check whether the current node and 
+	the next immediate node is free from the obstacles in the obstacle list, if it is then we move the bot towards that node
+	'''
 	def main(self):
 		print("In MAIN")
 		"""
@@ -274,7 +283,10 @@ class RootClient(object):
 
 		print("************************GOAL REACHED************************")
 	
-
+'''
+Waiting for all the Services
+Calling RootClient class
+'''
 if __name__ == "__main__":
 	rospy.init_node("controller_client", anonymous=True)
 	print("Node initialized")

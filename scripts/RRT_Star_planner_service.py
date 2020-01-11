@@ -346,6 +346,14 @@ class RRTStar(object):
 
         return None
 
+
+'''
+Firstly we replace all the nan values in the scan list with a constant value,i.e., 100 in this case as RRT_Star was facing some issues
+We call RRTStar to give us a path to the goal avoiding the obstacles in the frame; sample area decides the proximity within which we are
+to generate a path
+Now we pass the goal_point, scan_list and start_point to rrt_star function
+We get a path in the form of a list of points 
+'''
 def handle_add_two_ints(req):
     #print "Returning [%s + %s = %s]"%(req.a, req.b, (req.a + req.b))
     print("Start " + __file__)
@@ -376,6 +384,13 @@ def handle_add_two_ints(req):
     print(path)
     print(type(path))
     
+
+'''
+As the range of laser scan is 4m, we must ensure that the distance between all consecutive points in path is less than 4m
+If the dist between any two consecutive points is more than 4 , we divide the distance into sets such that the next distance
+to be traversed by the bot is always less than or equal to 4m. This ensures that the bot does not run into any obstacles which
+is not in its range.
+'''
     if path is not None:
         l=[]
         prev=path[0]
@@ -407,12 +422,20 @@ def handle_add_two_ints(req):
         b.points=[]
     	return PlannerResponse(b,False)
 
+
+'''
+Initializing ActionService(rrt_planner)
+Calls handle_add_two_ints function
+'''
 def add_two_ints_server():
     rospy.init_node('rrt_server')
     s = rospy.Service('rrt_planner', Planner, handle_add_two_ints)
     print "Ready."
     rospy.spin()
 
+'''
+Initialize Subscriber(Odom)
+'''
 if __name__ == "__main__":
     sub = rospy.Subscriber ('/odom', Odometry, get_position)
     add_two_ints_server()
