@@ -1,6 +1,6 @@
 # Define the goal
 Point_xy goal # Specify which dishwasher we want to use
-
+bool flag
 ---
 # Define the result
 bool result

@@ -385,12 +385,12 @@ def handle_add_two_ints(req):
     print(type(path))
     
 
-'''
-As the range of laser scan is 4m, we must ensure that the distance between all consecutive points in path is less than 4m
-If the dist between any two consecutive points is more than 4 , we divide the distance into sets such that the next distance
-to be traversed by the bot is always less than or equal to 4m. This ensures that the bot does not run into any obstacles which
-is not in its range.
-'''
+    '''
+    As the range of laser scan is 4m, we must ensure that the distance between all consecutive points in path is less than 4m
+    If the dist between any two consecutive points is more than 4 , we divide the distance into sets such that the next distance
+    to be traversed by the bot is always less than or equal to 4m. This ensures that the bot does not run into any obstacles which
+    is not in its range.
+    '''
     if path is not None:
         l=[]
         prev=path[0]

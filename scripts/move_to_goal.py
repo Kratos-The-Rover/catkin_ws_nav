@@ -60,6 +60,14 @@ def execute(goal):
         #     thres=0.7
         # if(dist>10)
         #     thres=1
+        if dist>6 and not goal.flag:
+            command.angular.z=0
+            pub.publish(command)
+            result = moveToGoalResult()
+            result.result = False
+            server.set_succeeded(result, "Deviated from path")
+            flag=0
+
         if ((abs(x_diff)>0.5) or (abs(y_diff)>0.5)):
             command.linear.x = min(0.5,fwd_vel*dist)
             feedback = moveToGoalFeedback()

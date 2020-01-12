@@ -8,6 +8,6 @@
 	</node>
 	<node pkg="navigation" type="rotate_to_goal.py" name="rotate_to_goal" output="log">
 	</node>
-	<node pkg="navigation" type="controller_client.py" name="controller_client" output="screen">
+	<node pkg="navigation" type="controller_client_update.py" name="controller_client" output="screen">
 	</node>
 </launch>
