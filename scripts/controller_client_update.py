@@ -10,7 +10,7 @@ import numpy as np
 import rospy
 from sensor_msgs.msg import LaserScan,NavSatFix
 from shapely.geometry import Polygon, Point, LineString
-from utils_scan import check_intersection_scan,make_obstacles_scan
+from utils_scan import check_intersection_scan,make_obstacles_scan,local_to_global_pt
 from nav_msgs.msg import Odometry
 from navigation.srv import *
 from geometry_msgs.msg import Pose
@@ -18,7 +18,7 @@ import roslib
 roslib.load_manifest('navigation')
 import actionlib
 
-from navigation.msg import moveToGoalAction, moveToGoalGoal, RotateToGoalGoal, RotateToGoalAction, Point_xy, PointArray
+from navigation.msg import moveToGoalAction, moveToGoalGoal, RotateToGoalGoal, RotateToGoalAction,Rotate360Goal, Rotate360Action, Point_xy, PointArray
 #import service module and message file
 
 
@@ -62,16 +62,19 @@ class RootClient(object):
    
 		self.currentOdom = Odometry()
 
-
+		self.ball_detected=False
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb,queue_size=10)
 		self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
 		self.goal_sub = rospy.Subscriber('/goal2', Point_xy, self.goal_cb)
 		#self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
 		self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
+		self.ball_detector = rospy.ServiceProxy('adjust_service', Adjust)
 		self.move_client = actionlib.SimpleActionClient('commander', moveToGoalAction)
 		self.move_client.wait_for_server()
 		self.rotate_client = actionlib.SimpleActionClient('rotator',RotateToGoalAction)
 		self.rotate_client.wait_for_server()
+		self.rotate_360_client = actionlib.SimpleActionClient('rotator_360',Rotate360Action)
+		self.rotate_360_client.wait_for_server()
 		self.dynamic_manager = rospy.ServiceProxy('dynamic_planner_service', Dynamic)
 		rate=rospy.Rate(1)
 		rate.sleep()
@@ -289,6 +292,112 @@ class RootClient(object):
 				self.flag=0
 
 		print("************************GOAL REACHED************************")
+
+		self.rotate_360_client.send_goal(goal2, feedback_cb = self.rotator_fb)
+		self.rotate_360_client.wait_for_result(rospy.Duration.from_sec(100.0))
+		if not self.rotate_360_client.get_result().result:
+			self.ball_detector(True)
+			self.ball_detected=True
+			
+
+		#new changes
+		if not ball_detected:
+			hexagon_local=[[2,0],[-1,-1.73],[1,-1.73],[1,-1.73],[1,-1.73]]
+			i=0
+			while(len(hexagon_local)!=0):
+				i+=1
+				global_point = local_to_global_pt(hexagon_local[0],self.currentOdom.pose.pose)
+				self.flag = 1
+				while(self.flag):
+					final_path = []
+					# self.goal = rospy.get_param('')
+					try:
+						print("Calculating RRT-PATH")
+						local_goal=Point_xy(global_point)
+						#print("LOCAL GOAL",local_goal)
+						x1=self.currentOdom.pose.pose.position.x
+						y1=self.currentOdom.pose.pose.position.y
+						response = self.rrt_star_path(Point_xy([x1,y1]),local_goal,self.scan_list)
+						if response.ack:
+							
+							final_path = response.path
+							#print("local path",local_path)
+							#final_path = self.local_to_global_path(local_path)
+							print("path calculated",final_path)
+						else:
+
+							print("Path not found! Retrying!")
+							continue
+					except rospy.ServiceException, e:
+						print "Service call failed: %s"%e
+
+					while len(final_path.points)!=1:
+						#rotate towards goal
+						print("Rotating the bot")
+						goal2 = RotateToGoalGoal()
+						goal2.goal = final_path.points[-2]
+						self.rotate_client.send_goal(goal2, feedback_cb = self.rotator_fb)
+						self.rotate_client.wait_for_result()
+						print("Done rotating the bot")
+						
+						# rospy.loginfo("Asking the bot to move.")
+						print("Calling dynamic manager service")
+						x1=final_path.points[-1].point[0]
+						y1=final_path.points[-1].point[1]
+						x2=final_path.points[-2].point[0]
+						y2=final_path.points[-2].point[1]
+						dist=math.sqrt((x2-x1)**2+(y2-y1)**2)
+						response_1 = self.dynamic_manager(Point_xy([0,0]),Point_xy([dist,0]), self.scan_list)
+						#response_1 = self.dynamic_manager(final_path.points[-1],final_path.points[-2],self.scan_list)
+						if response_1.ack:
+							print("No intersection!!!!")
+							#call commander to move the bot 
+							print("Moving the bot")
+							goal1 = moveToGoalGoal()
+							goal1.goal = final_path.points[-2]
+							goal1.flag=  self.deviation
+							self.move_client.send_goal(goal1, feedback_cb = self.commander_fb)
+							# rospy.loginfo("Asking the bot to move.")
+							self.move_client.wait_for_result(rospy.Duration.from_sec(100.0))
+							if not (self.move_client.get_result().result):
+								self.deviation=True
+								final_path.points.append(final_path.points[-1])
+								print("Bot is tracking back")
+								continue
+							else:
+								self.deviation=False
+								print("Bot has moved",self.currentOdom.pose.pose.position.x,self.currentOdom.pose.pose.position.y)
+							#remove first node when successful
+							print("Final path updated")
+							final_path.points = final_path.points[:-1]
+						else:
+							# try:
+							# 	print("Recalculating RRT-Path")
+							# 	response = self.rrt_star_path(final_path.points[0],self.goal,self.scan_list)
+							# 	if response.ack:
+							# 		print("Path Recalculated")
+							# 		final_path = response.path
+							# 	else:
+							# 		continue
+							# except rospy.ServiceException, e:
+							# 	print "Service call failed: %s"%e 
+							break
+						print("updated final_path",final_path.points)
+					if(len(final_path.points)==1):
+						self.flag=0
+					print("***************Reached Goal (Hexagon:%d)***************",i)
+					#rotate 360
+					goal2 = Rotate360Goal()
+					goal2.goal=True
+					self.rotate_360_client.send_goal(goal2, feedback_cb = self.rotator_fb)
+					# rospy.loginfo("Asking the bot to move.")
+					self.rotate_360_client.wait_for_result(rospy.Duration.from_sec(100.0))
+					if not self.rotate_360_client.get_result().result:
+						self.ball_detector(True)
+						break
+
+
+				hexagon_local = hexagon_local[1:]
 	
 '''
 Waiting for all the Services

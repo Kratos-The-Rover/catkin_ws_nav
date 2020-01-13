@@ -8,6 +8,12 @@
 	</node>
 	<node pkg="navigation" type="rotate_to_goal.py" name="rotate_to_goal" output="log">
 	</node>
+	<node pkg="navigation" type="rotate_360.py" name="rotate_360" output="log">
+	</node>
 	<node pkg="navigation" type="controller_client_update.py" name="controller_client" output="screen">
+	</node>
+	<node pkg="navigation" type="gps_to_xy.py" name="gps_to_xy" output="log">
+	</node>
+	<node pkg="navigation" type="adjust_bot_final.py" name="adjust_log" output="log">
 	</node>
 </launch>

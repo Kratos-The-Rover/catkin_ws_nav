@@ -36,6 +36,23 @@ def local_to_global_pts(pts_in_local,pose):
 
 		return pts_in_global
 
+def local_to_global_pt(pt_in_local,pose):
+	x1=pose.position.x
+	y1=pose.position.y
+	orientation_q = pose.orientation
+	orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+	(roll, pitch, theta1) = euler_from_quaternion (orientation_list)
+	x=pt_in_local[0]
+	y=pt_in_local[1]
+	theta2=math.atan2(y,x)
+	theta=theta1+theta2
+	r=math.sqrt(x**2+y**2)
+	x2=r*math.cos(theta)
+	y2=r*math.sin(theta)
+	pt_in_global=[x1+x2,y1+y2] 
+	return pt_in_global
+
+
 
 def make_obstacles_global(scan_list,pose):
 	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
