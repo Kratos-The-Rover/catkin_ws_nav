@@ -8,6 +8,7 @@ import actionlib
 import roslib
 roslib.load_manifest('navigation')
 from navigation.msg import Rotate360Action, Rotate360Goal, Rotate360Result, Rotate360Feedback, Point_xy
+from darknet_ros_msgs.msg import BoundingBoxes, ObjectCount
  
 roll = pitch = yaw = 0.0
 x = y = z = 0
@@ -50,7 +51,7 @@ def execute(goal):
         #print quat
         
         print("in while loop")
-        target_rad = current_yaw-0.01
+        target_rad = current_yaw-0.1
         if (abs(target_rad-yaw)>0.05):
             print("did not reach target")
             command.angular.z = 0.25

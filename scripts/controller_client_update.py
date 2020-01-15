@@ -292,7 +292,8 @@ class RootClient(object):
 				self.flag=0
 
 		print("************************GOAL REACHED************************")
-
+		goal2 = Rotate360Goal()
+		goal2.goal=True
 		self.rotate_360_client.send_goal(goal2, feedback_cb = self.rotator_fb)
 		self.rotate_360_client.wait_for_result(rospy.Duration.from_sec(100.0))
 		if not self.rotate_360_client.get_result().result:
@@ -301,7 +302,7 @@ class RootClient(object):
 			
 
 		#new changes
-		if not ball_detected:
+		if not self.ball_detected:
 			hexagon_local=[[2,0],[-1,-1.73],[1,-1.73],[1,-1.73],[1,-1.73]]
 			i=0
 			while(len(hexagon_local)!=0):

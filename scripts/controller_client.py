@@ -135,8 +135,7 @@ class RootClient(object):
 		Attributes: prints feedback from commander
 		Return: None 
 		"""
-		# if fb_data.distance_left>6:
-			
+		# if fb_data.distance_left>6:			
 		#rospy.loginfo(fb_data.distance_left)
 		# print("Commander_FB DONE")
 		pass
