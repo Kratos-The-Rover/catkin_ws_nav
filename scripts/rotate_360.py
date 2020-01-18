@@ -68,13 +68,13 @@ def execute(goal):
             server.set_succeeded(result, "Goal reached successfully")
             flag=0
         print("publishing")
-        print("target_angle={} current_angle:{}", target_rad,yaw)
+        print("target_angle={} current_angle:{} , rotating 360!!!!!!", target_rad,yaw)
         
 if __name__=="__main__":
     #global pub,sub,server, command
     rospy.init_node('rotate_robot_360')
     command =Twist()
-    sub = rospy.Subscriber ('/odom', Odometry, get_rotation)
+    sub = rospy.Subscriber ('zed/zed_node/odom', Odometry, get_rotation)
     image_sub = rospy.Subscriber('darknet_ros/bounding_boxes',BoundingBoxes, image_callback)
     print("after subscriber")
     pub =  rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,queue_size=10)

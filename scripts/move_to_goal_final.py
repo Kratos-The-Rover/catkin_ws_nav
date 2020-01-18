@@ -121,8 +121,8 @@ def execute(goal):
             result.result = True
             server.set_succeeded(result, "Goal reached successfully")
             flag=0
-        # print("publishing")
-        # print("target pos={} current pos:{}", (dest_x,dest_y),(x,y))
+        print("publishing")
+        print("target pos={} current pos:{}", (dest_x,dest_y),(x,y))
         
 
 def get_nearest_ind():
@@ -135,7 +135,7 @@ Initializing the Subscriber(Odom), Publisher(cmd_vel), ActionServer(Move_to_goal
 if __name__=="__main__":
     rospy.init_node('move_robot')
     command =Twist()
-    sub = rospy.Subscriber ('/odom', Odometry, get_position)
+    sub = rospy.Subscriber ('zed/zed_node/odom', Odometry, get_position)
     print("after subscriber")
     pub =  rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,queue_size=10)
     server = actionlib.SimpleActionServer('commander', moveToGoalAction, execute, False)

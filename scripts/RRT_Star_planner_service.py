@@ -292,7 +292,7 @@ class RRTStar(object):
     def draw_graph(self, scan, global_obstacle=[] , rnd=None):
         plt.clf()
 
-        pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
+        pt_ang = np.arange(-1.57079994678,1.57079994678,0.00870000012219)
         pt_scan = np.array(scan)
         pts = []
         pt_x = np.multiply(pt_scan,np.cos(pt_ang))
@@ -437,5 +437,5 @@ def add_two_ints_server():
 Initialize Subscriber(Odom)
 '''
 if __name__ == "__main__":
-    sub = rospy.Subscriber ('/odom', Odometry, get_position)
+    sub = rospy.Subscriber ('zed/zed_node/odom', Odometry, get_position)
     add_two_ints_server()

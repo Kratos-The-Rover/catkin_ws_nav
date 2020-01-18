@@ -85,7 +85,7 @@ if __name__=="__main__":
     #global pub,sub,server, command
     rospy.init_node('rotate_robot')
     command =Twist()
-    sub = rospy.Subscriber ('/odom', Odometry, get_rotation)
+    sub = rospy.Subscriber ('zed/zed_node/odom', Odometry, get_rotation)
     print("after subscriber")
     pub =  rospy.Publisher('/cmd_vel_mux/input/teleop', Twist,queue_size=10)
     server = actionlib.SimpleActionServer('rotator', RotateToGoalAction, execute, False)

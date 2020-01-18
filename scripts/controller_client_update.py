@@ -64,7 +64,7 @@ class RootClient(object):
 
 		self.ball_detected=False
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb,queue_size=10)
-		self.odom_sub = rospy.Subscriber('/odom', Odometry , self.odom_cb)
+		self.odom_sub = rospy.Subscriber('zed/zed_node/odom', Odometry , self.odom_cb)
 		self.goal_sub = rospy.Subscriber('/goal2', Point_xy, self.goal_cb)
 		#self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
 		self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
@@ -294,9 +294,11 @@ class RootClient(object):
 		print("************************GOAL REACHED************************")
 		goal2 = Rotate360Goal()
 		goal2.goal=True
+		print("rotating 360")
 		self.rotate_360_client.send_goal(goal2, feedback_cb = self.rotator_fb)
 		self.rotate_360_client.wait_for_result(rospy.Duration.from_sec(100.0))
 		if not self.rotate_360_client.get_result().result:
+			print("*****BALL DETECTED**********")
 			self.ball_detector(True)
 			self.ball_detected=True
 			
@@ -388,12 +390,14 @@ class RootClient(object):
 						self.flag=0
 					print("***************Reached Goal (Hexagon:%d)***************",i)
 					#rotate 360
+					print("rotating 360")
 					goal2 = Rotate360Goal()
 					goal2.goal=True
 					self.rotate_360_client.send_goal(goal2, feedback_cb = self.rotator_fb)
 					# rospy.loginfo("Asking the bot to move.")
 					self.rotate_360_client.wait_for_result(rospy.Duration.from_sec(100.0))
 					if not self.rotate_360_client.get_result().result:
+						print("********BALL DETECTED********")
 						self.ball_detector(True)
 						break
 

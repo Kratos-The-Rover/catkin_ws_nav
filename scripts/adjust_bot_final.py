@@ -138,7 +138,7 @@ def execute(goal):
 if __name__ == "__main__":
   try:
 	rospy.init_node('follower')
-	s = rospy.Service('adjust_service', Dynamic, execute)
+	s = rospy.Service('adjust_service', Adjust, execute)
 # =======  
 # if __name__ == "__main__":
 #   try:

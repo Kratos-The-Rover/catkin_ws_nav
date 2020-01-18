@@ -14,8 +14,8 @@ PI = np.pi
 THRESHOLD = 0.6
 ALPHA = 10
 SHOW_ANIMATION=True
-MIN_ANGLE=-0.521567881107
-INCREMENT=0.00163668883033
+MIN_ANGLE=-1.57079994678
+INCREMENT=0.00870000012219
 
 def local_to_global_pts(pts_in_local,pose):
 		pts_in_global=[]
@@ -55,7 +55,7 @@ def local_to_global_pt(pt_in_local,pose):
 
 
 def make_obstacles_global(scan_list,pose):
-	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
+	pt_ang = np.arange(-1.57079994678,1.57079994678,0.00870000012219)
 	pt_scan = np.array(scan_list)
 	pts = []
 	cos_of_pt_ang = np.cos(pt_ang)
@@ -98,7 +98,7 @@ def make_obstacles_global(scan_list,pose):
 
 
 def make_obstacles_scan(scan_list):
-	pt_ang = np.arange(-0.521567881107,0.524276316166,0.00163668883033)
+	pt_ang = np.arange(-1.57079994678,1.57079994678,0.00870000012219)
 	pt_scan = np.array(scan_list)
 	pts = []
 	cos_of_pt_ang = np.cos(pt_ang)
