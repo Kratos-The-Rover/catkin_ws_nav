@@ -17,7 +17,7 @@ from geometry_msgs.msg import Pose
 import roslib
 roslib.load_manifest('navigation')
 import actionlib
-
+from std_msgs.msg import String
 from navigation.msg import moveToGoalAction, moveToGoalGoal, RotateToGoalGoal, RotateToGoalAction,Rotate360Goal, Rotate360Action, Point_xy, PointArray
 #import service module and message file
 
@@ -66,6 +66,7 @@ class RootClient(object):
 		self.scan_sub = rospy.Subscriber('/scan', LaserScan , self.scan_cb,queue_size=10)
 		self.odom_sub = rospy.Subscriber('zed/zed_node/odom', Odometry , self.odom_cb)
 		self.goal_sub = rospy.Subscriber('/goal2', Point_xy, self.goal_cb)
+		self.result_pub = rospy.Publisher('/acknowledge',String,queue_size=10)
 		#self.gps_Sub = rospy.Subscriber('global_position/local' , NavSatFix , self.gps_cb)
 		self.rrt_star_path = rospy.ServiceProxy('rrt_planner', Planner)
 		self.ball_detector = rospy.ServiceProxy('adjust_service', Adjust)
@@ -292,6 +293,7 @@ class RootClient(object):
 				self.flag=0
 
 		print("************************GOAL REACHED************************")
+		self.result_pub.publish("GOAL REACHED")
 		goal2 = Rotate360Goal()
 		goal2.goal=True
 		print("rotating 360")
@@ -301,7 +303,7 @@ class RootClient(object):
 			print("*****BALL DETECTED**********")
 			self.ball_detector(True)
 			self.ball_detected=True
-			
+			self.result_pub.publish("BALL DETECTED")
 
 		#new changes
 		if not self.ball_detected:
@@ -389,6 +391,7 @@ class RootClient(object):
 					if(len(final_path.points)==1):
 						self.flag=0
 					print("***************Reached Goal (Hexagon:%d)***************",i)
+					pub.publish()
 					#rotate 360
 					print("rotating 360")
 					goal2 = Rotate360Goal()
@@ -398,6 +401,7 @@ class RootClient(object):
 					self.rotate_360_client.wait_for_result(rospy.Duration.from_sec(100.0))
 					if not self.rotate_360_client.get_result().result:
 						print("********BALL DETECTED********")
+						self.result_pub.publish("BALL DETECTED")
 						self.ball_detector(True)
 						break
 
