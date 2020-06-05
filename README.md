@@ -1,6 +1,6 @@
 ## Navigation Package
 
-Code for autonomous navigation of a prototype Mars Rover, using RRT* algorithm. Simulations were done using turtlebot on gazebo.
+Code for autonomous navigation of a prototype Mars Rover, using RRT* algorithm. Simulations were done using turtlebot on gazebo. The code is designed such that your rover will avoid obstacles and it will remember the position of all obstacles it encounters.
 This code was implemented on the rover 'Kratos' in IRC 2020
 To use this code:-
 1. Clone this repo
